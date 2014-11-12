@@ -31,40 +31,65 @@ public class CrawlingSimulator {
         }
     }
 
-    @Parameter(names = { "--help", "-help", "-h" }, help = true, descriptionKey = "help", description = "This help message.", hidden = true)
+    @Parameter(names = { "-h", "--help", "-help" }, help = true, descriptionKey = "help", description = "The help message.", hidden = true)
     private boolean help;
 
-    @Parameter(names = { "--seed-file", "-s" }, converter = FileConverter.class, required = true, description = "File to seed urls.")
+    @Parameter(names = { "-s", "--seed-file" }, converter = FileConverter.class, required = true, description = "File with seed urls.")
     protected File seed_file = null;
 
-    @Parameter(names = { "--graph-file", "-g" }, converter = FileConverter.class, required = true, description = "File to web graph. (url to url mapping)")
+    @Parameter(names = { "-g", "--graph-file" }, converter = FileConverter.class, required = true, description = "File with web graph. (url to url mapping)")
     protected File graph_file = null;
 
-    @Parameter(names = { "--quality-file", "-q" }, converter = FileConverter.class, required = true, description = "File to url quality mapping.")
+    @Parameter(names = { "-q", "--quality-file" }, converter = FileConverter.class, required = true, description = "File with url quality mapping.")
     protected File quality_file = null;
 
-    @Parameter(names = { "--step-quality-output-file", "-o" }, converter = FileConverter.class, required = true, description = "Output file with quality per step.")
+    @Parameter(names = { "-o", "--step-quality-output-file" }, converter = FileConverter.class, required = true, description = "Output file with quality per step.")
     protected File step_quality_output_file = null;
 
-    @Parameter(names = { "--num-crawl-steps", "-n" }, required = false, description = "Number of crawling steps.")
+    @Parameter(names = { "-n", "--num-crawl-steps" }, required = false, description = "Number of crawling steps.")
     protected Integer number_of_crawling_steps = 5000;
 
-    @Parameter(names = { "--num-urls-per-step", "-c" }, required = false, description = "Number of urls crawled per step.")
+    @Parameter(names = { "-c", "--num-urls-per-step" }, required = false, description = "Number of urls crawled per step.")
     protected Integer urls_per_step = 200;
 
-    @Parameter(names = { "--database-file", "-d" }, converter = FileConverter.class, required = true, description = "File to database.")
+    @Parameter(names = { "-d", "--database-file" }, converter = FileConverter.class, required = true, description = "File to database.")
     protected File database_file = null;
 
     public CrawlingSimulator() {
 
     }
 
-    public void init() throws Exception {
+    public CrawlingSimulator init(String... args) throws Exception {
+        log.debug("Initialize Crawling Simulator ...");
 
+        // Initialize
+        JCommander jc = new JCommander(this);
+        jc.setProgramName("CrawlingSimulator");
+        // Check for errors and display help/usage
+        try {
+            jc.parse(args);
+            if (help == true) {
+                jc.usage();
+            } // if
+        } catch (ParameterException e) {
+            log.error("Parameter parsing error.", e);
+            jc.usage();
+            System.exit(1);
+        } // try-catch
+
+        // TODO: other ...
+
+        return this;
     }
 
-    public void run() throws Exception {
+    public CrawlingSimulator run() throws Exception {
+        // TODO: Load web graph
 
+        log.info("Start Crawling Simulator ...");
+        // Start simulation
+        // TODO: simulate
+        log.info("Stop Crawling Simulator.");
+        return this;
     }
 
     /**
@@ -74,28 +99,7 @@ public class CrawlingSimulator {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-        log.debug("Initialize Crawling Simulator ...");
-        // Initialisieren
-        CrawlingSimulator cs = new CrawlingSimulator();
-        JCommander jc = new JCommander(cs);
-        jc.setProgramName("CrawlingSimulator");
-        // Check for errors and display help/usage
-        try {
-            jc.parse(args);
-            if (cs.help == true) {
-                jc.usage();
-            } // if
-        } catch (ParameterException e) {
-            log.error("Parameter parsing error.", e);
-            jc.usage();
-            System.exit(1);
-        } // try-catch
-        cs.init();
-
-        // Start simulation
-        log.info("Start Crawling Simulator ...");
-        cs.run();
-        log.info("Stop Crawling Simulator.");
+        new CrawlingSimulator().init(args).run();
     }
 
 }
