@@ -1,0 +1,15 @@
+--seed-file
+seed.txt
+--graph-file
+graph.txt
+--quality-file
+qual.txt
+--step-quality-output-file
+out.txt
+--num-crawl-steps
+5000
+--num-urls-per-step
+200
+--database-file
+database.db
+--help
