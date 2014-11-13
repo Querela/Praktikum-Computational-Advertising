@@ -31,6 +31,10 @@ import org.slf4j.LoggerFactory;
 public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     private final static Logger log = LoggerFactory.getLogger(DBWebGraphBuilder.class);
 
+    protected final static long refresh_line_count = 5000L;
+    protected final static float refresh_beta = 0.03f;
+    protected final static long gc_line_count = 100000L;
+
     protected boolean showProgress = false;
     protected Connection conn = null;
     protected boolean hasData = false;
@@ -64,7 +68,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(100), UNIQUE KEY url_UNIQUE (url))");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT, FOREIGN KEY (id1) REFERENCES pages(id), FOREIGN KEY (id2) REFERENCES pages(id))");
 
-            pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
+            pstmt_insert_url = conn
+                    .prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
             pstmt_insert_link = conn
                     .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ? LIMIT 1), (SELECT p2.id FROM pages AS p2 WHERE p2.url = ? LIMIT 1))");
             pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
@@ -148,11 +153,40 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return String.format("%.2f sec", millis / 1000f);
         } else if (millis < 3600000L) {
             return String.format("%.2f min", millis / 60000f);
-        } else if (millis < 216000000L) {
+        } else if (millis < 86400000L) {
             return String.format("%.2f hrs", millis / 3600000f);
+        } else if (millis < 30758400000L) {
+            return String.format("%.2f days", millis / 86400000f);
         } else {
             return millis + " ?";
         }
+    }
+
+    protected static String formatProgressMessage(long curLine, long curPos, long length, long start) {
+        // > time spend (milli seconds)
+        long diff = System.currentTimeMillis() - start;
+        // > spent time (seconds)
+        // ---- diff / 1000
+        // > speed (line numbers per second):
+        // ---- myLineNr / (diff / 1000)
+        // > (for 1000 lines):
+        // ---- myLineNr / (diff / 1000) / 1000
+        // ---- myLineNr / diff
+        float speed = curLine * 1f / diff;
+        // > line numbers per byte:
+        // ---- myLineNr / (float) pos
+        // > line numbers for whole file:
+        // ---- myLineNr / pos * file_size
+        // > time for all rest lines (in seconds)
+        // ---- (myLineNr / pos * file_size) / (speed * 1000)
+        // > (to millis for convert function)
+        // ---- (myLineNr / pos * file_size) / (speed * 1000) * 1000
+        // ---- (myLineNr / pos * file_size) / speed
+        long timeLeft = (long) (curLine / (float) curPos * (length - curPos) / speed);
+        return String.format(
+                "Progress: (%.2f %%)\n    In line %s (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)", curPos
+                        * 100f / length, curLine, speed, longToSize(curPos), longToSize(length), longToTime(diff),
+                longToTime(timeLeft));
     }
 
     /*
@@ -167,9 +201,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // if
 
         try {
-            long lineNr = 0;
             final long start = System.currentTimeMillis();
-
+            long lineNr = 0;
+            long lastLineNr = lineNr;
+            float lastSpeed = 0.f;
+            long lastStart = start;
             final long file_size = graph_file.length();
             final String file_size_s = longToSize(file_size);
 
@@ -196,55 +232,46 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 lineNr++;
 
                 // Update progress
-                if (showProgress) {
+                if (showProgress && (lineNr % refresh_line_count == 0)) {
+                    // current values
                     final long myLineNr = lineNr;
+                    final long totalDiff = System.currentTimeMillis() - start;
+                    final long diff = totalDiff + start - lastStart;
+                    final float speed = ((1 - refresh_beta) * lastSpeed)
+                            + (refresh_beta * ((lineNr - lastLineNr) * 1f / diff));
+                    final long pos = fc.position();
+                    final long timeLeft = (long) (lineNr / (float) pos * (file_size - pos) / speed);
+                    final float percent = pos * 100f / file_size;
 
+                    // Values for next iteration
+                    lastLineNr = lineNr;
+                    lastStart = diff + lastStart;
+                    lastSpeed = speed;
+
+                    // Present values
                     Runnable r = new Runnable() {
                         @Override
                         public void run() {
                             try {
-                                // > time spend (milli seconds)
-                                long diff = System.currentTimeMillis() - start;
-                                long pos = fc.position();
-                                // > spent time (seconds)
-                                // ---- diff / 1000
-                                // > speed (line numbers per second):
-                                // ---- myLineNr / (diff / 1000)
-                                // > (for 1000 lines):
-                                // ---- myLineNr / (diff / 1000) / 1000
-                                // ---- myLineNr / diff
-                                float speed = myLineNr * 1f / diff;
-                                // > line numbers per byte:
-                                // ---- myLineNr / (float) fc.position()
-                                // > line numbers for whole file:
-                                // ---- myLineNr / fc.position() * file_size
-                                // > time for all lines (in seconds)
-                                // ---- (myLineNr / fc.position() * file_size) /
-                                // (speed * 1000)
-                                // > (to millis for convert function)
-                                // ---- (myLineNr / fc.position() * file_size) /
-                                // (speed * 1000) * 1000
-                                // ---- (myLineNr / fc.position() * file_size) /
-                                // speed
-                                long timeLeft = (long) (myLineNr / (float) pos * file_size / speed);
                                 progressLabel
                                         .setText(String
-                                                .format("Progress: (%.2f %%)\n    In line %s (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
-                                                        pos * 100f / file_size, myLineNr, speed, longToSize(pos),
-                                                        file_size_s, longToTime(diff), longToTime(timeLeft)));
+                                                .format("Progress: (%.2f %%)\n    In line %d (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
+                                                        percent, myLineNr, speed, longToSize(pos), file_size_s,
+                                                        longToTime(totalDiff), longToTime(timeLeft)));
                             } catch (Exception e) {
                                 progressLabel.setText(e.getLocalizedMessage());
                             } // try-catch
                         }
                     };
 
-                    if (lineNr % 5000 == 0) {
-                        SwingUtilities.invokeLater(r);
-                    } // if
+                    SwingUtilities.invokeLater(r);
                 } // if
-                if (lineNr % 50000 == 0) {
+                  // Clean up?
+                if (lineNr % gc_line_count == 0) {
                     System.gc();
                 } // if
+
+                // Start of code
 
                 int i = line.indexOf('\t');
                 if (i == -1) {
@@ -260,7 +287,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     pstmt_insert_url.setString(2, url1);
                     pstmt_insert_url.executeUpdate();
                 } catch (Exception e) {
-                    // log.error("insert url", e);
+                    log.error("insert url", e);
                 } // try-catch
 
                 try {
@@ -268,7 +295,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     pstmt_insert_url.setString(2, url2);
                     pstmt_insert_url.executeUpdate();
                 } catch (Exception e) {
-                    // log.error("insert url", e);
+                    log.error("insert url", e);
                 } // try-catch
 
                 try {
@@ -301,9 +328,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // if
 
         try {
-            long lineNr = 0;
             final long start = System.currentTimeMillis();
-
+            long lineNr = 0;
+            long lastLineNr = lineNr;
+            float lastSpeed = 0.f;
+            long lastStart = start;
             final long file_size = quality_file.length();
             final String file_size_s = longToSize(file_size);
 
@@ -330,56 +359,49 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 lineNr++;
 
                 // Update progress
-                if (showProgress) {
+                // Update progress
+                if (showProgress && (lineNr % refresh_line_count == 0)) {
+                    // current values
                     final long myLineNr = lineNr;
+                    final long totalDiff = System.currentTimeMillis() - start;
+                    final long diff = totalDiff + start - lastStart;
+                    final float speed = ((1 - refresh_beta) * lastSpeed)
+                            + (refresh_beta * ((lineNr - lastLineNr) * 1f / diff));
+                    final long pos = fc.position();
+                    final long timeLeft = (long) (lineNr / (float) pos * (file_size - pos) / speed);
+                    final float percent = pos * 100f / file_size;
 
+                    // Values for next iteration
+                    lastLineNr = lineNr;
+                    lastStart = diff + lastStart;
+                    lastSpeed = speed;
+
+                    // Present values
                     Runnable r = new Runnable() {
                         @Override
                         public void run() {
                             try {
-                                log.debug("swing ... {}", myLineNr);
-                                // > time spend (milli seconds)
-                                long diff = System.currentTimeMillis() - start;
-                                long pos = fc.position();
-                                // > spent time (seconds)
-                                // ---- diff / 1000
-                                // > speed (line numbers per second):
-                                // ---- myLineNr / (diff / 1000)
-                                // > (for 1000 lines):
-                                // ---- myLineNr / (diff / 1000) / 1000
-                                // ---- myLineNr / diff
-                                float speed = myLineNr * 1f / diff;
-                                // > line numbers per byte:
-                                // ---- myLineNr / (float) fc.position()
-                                // > line numbers for whole file:
-                                // ---- myLineNr / fc.position() * file_size
-                                // > time for all lines (in seconds)
-                                // ---- (myLineNr / fc.position() * file_size) /
-                                // (speed * 1000)
-                                // > (to millis for convert function)
-                                // ---- (myLineNr / fc.position() * file_size) /
-                                // (speed * 1000) * 1000
-                                // ---- (myLineNr / fc.position() * file_size) /
-                                // speed
-                                long timeLeft = (long) (myLineNr / (float) pos * file_size / speed);
+                                // formatProgressMessage(myLineNr,
+                                // fc.position(), file_size, start)
                                 progressLabel
                                         .setText(String
-                                                .format("Progress: (%.2f %%)\n    In line %s (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
-                                                        pos * 100f / file_size, myLineNr, speed, longToSize(pos),
-                                                        file_size_s, longToTime(diff), longToTime(timeLeft)));
+                                                .format("Progress: (%.2f %%)\n    In line %d (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
+                                                        percent, myLineNr, speed, longToSize(pos), file_size_s,
+                                                        longToTime(totalDiff), longToTime(timeLeft)));
                             } catch (Exception e) {
                                 progressLabel.setText(e.getLocalizedMessage());
                             } // try-catch
                         }
                     };
 
-                    if (lineNr % 5000 == 0) {
-                        SwingUtilities.invokeLater(r);
-                    } // if
+                    SwingUtilities.invokeLater(r);
                 } // if
-                if (lineNr % 50000 == 0) {
+                  // Clean up?
+                if (lineNr % gc_line_count == 0) {
                     System.gc();
                 } // if
+
+                // Start of code
 
                 int i = line.indexOf(' ');
                 if (i == -1) {
