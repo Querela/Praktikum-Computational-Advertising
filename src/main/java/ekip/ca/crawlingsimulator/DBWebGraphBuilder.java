@@ -14,9 +14,11 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -37,6 +39,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     protected boolean hasData = false;
     protected PreparedStatement pstmt_insert_url;
     protected PreparedStatement pstmt_insert_link;
+    protected PreparedStatement pstmt_update_quality;
+    protected PreparedStatement pstmt_select_from_id;
+    protected PreparedStatement pstmt_select_linked;
+    protected PreparedStatement pstmt_select_all_from_id;
 
     public DBWebGraphBuilder(boolean show_progress) {
         this.showProgress = show_progress;
@@ -63,6 +69,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)");
             pstmt_insert_link = conn
                     .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ? LIMIT 1), (SELECT id FROM pages WHERE url = ? LIMIT 1))");
+            pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
+            pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ? LIMIT 1");
+            pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ? LIMIT 1");
+            pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
 
             hasData = false;
 
@@ -264,7 +274,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 } // try-catch
             } // while
 
-            log.info("Took {}", longToTime(System.currentTimeMillis() - start));
+            log.info("Took {} for graph parsing.", longToTime(System.currentTimeMillis() - start));
 
             br.close();
         } catch (Exception e) {
@@ -284,7 +294,105 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return;
         } // if
 
-        // TODO: ...
+        try {
+            long lineNr = 0;
+            final long start = System.currentTimeMillis();
+
+            final long file_size = quality_file.length();
+            final String file_size_s = longToSize(file_size);
+
+            JLabel filenameLabel = new JLabel(quality_file.getAbsolutePath(), JLabel.RIGHT);
+            final JTextArea progressLabel = new JTextArea("Progress: ");
+            progressLabel.setBackground(SystemColor.control);
+            progressLabel.setEditable(false);
+            progressLabel.setFont(filenameLabel.getFont());
+            Object[] oos = new Object[] { "Reading & Parsing qualities ...", filenameLabel, progressLabel };
+            FileInputStream fis = new FileInputStream(quality_file);
+            final FileChannel fc = fis.getChannel();
+            BufferedReader br = new BufferedReader(
+                    new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
+
+            log.debug("Begin reading quality mapping ...");
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                lineNr++;
+
+                // Update progress
+                if (showProgress) {
+                    final long myLineNr = lineNr;
+
+                    Runnable r = new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                // > time spend (milli seconds)
+                                long diff = System.currentTimeMillis() - start;
+                                long pos = fc.position();
+                                // > spent time (seconds)
+                                // ---- diff / 1000
+                                // > speed (line numbers per second):
+                                // ---- myLineNr / (diff / 1000)
+                                // > (for 1000 lines):
+                                // ---- myLineNr / (diff / 1000) / 1000
+                                // ---- myLineNr / diff
+                                float speed = myLineNr * 1f / diff;
+                                // > line numbers per byte:
+                                // ---- myLineNr / (float) fc.position()
+                                // > line numbers for whole file:
+                                // ---- myLineNr / fc.position() * file_size
+                                // > time for all lines (in seconds)
+                                // ---- (myLineNr / fc.position() * file_size) /
+                                // (speed * 1000)
+                                // > (to millis for convert function)
+                                // ---- (myLineNr / fc.position() * file_size) /
+                                // (speed * 1000) * 1000
+                                // ---- (myLineNr / fc.position() * file_size) /
+                                // speed
+                                long timeLeft = (long) (myLineNr / (float) pos * file_size / speed);
+                                progressLabel
+                                        .setText(String
+                                                .format("Progress: (%.2f %%)\n    In line %s (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
+                                                        pos * 100f / file_size, myLineNr, speed, longToSize(pos),
+                                                        file_size_s, longToTime(diff), longToTime(timeLeft)));
+                            } catch (Exception e) {
+                                progressLabel.setText(e.getLocalizedMessage());
+                            } // try-catch
+                        }
+                    };
+
+                    if (lineNr % 5000 == 0) {
+                        SwingUtilities.invokeLater(r);
+                    } // if
+                } // if
+                if (lineNr % 50000 == 0) {
+                    System.gc();
+                } // if
+
+                int i = line.indexOf('\t');
+                if (i == -1) {
+                    log.warn("Line {} contains no tab: {}", lineNr, line);
+                    continue;
+                } // if
+
+                String url = line.substring(0, i);
+                String qual = line.substring(i + 1);
+
+                if ("1".equals(qual)) {
+                    try {
+                        pstmt_update_quality.setString(1, url);
+                        pstmt_update_quality.executeUpdate();
+                    } catch (Exception e) {
+                        log.error(e.getLocalizedMessage());
+                    } // try-catch
+                } // if
+            } // while
+
+            log.info("Took {} for quality update.", longToTime(System.currentTimeMillis() - start));
+
+            br.close();
+        } catch (Exception e) {
+            log.error("read quality file fail", e);
+        } // try-catch
     }
 
     /*
@@ -329,7 +437,29 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
      */
     @Override
     public List<WebPage> getLinkedWebPages(WebPage page) {
-        return Collections.emptyList();
+        if (page == null) {
+            return Collections.emptyList();
+        } // if
+
+        List<WebPage> pages = new ArrayList<>();
+
+        try {
+            // Query all ids from linked pages
+            pstmt_select_linked.setLong(1, page.getID());
+            ResultSet rs = pstmt_select_linked.executeQuery();
+            while (rs.next()) {
+                // Retrieve each page for id
+                WebPage wp = fromID(rs.getLong(1));
+                if (wp != null) {
+                    pages.add(wp);
+                } // if
+            } // while
+            rs.close();
+        } catch (Exception e) {
+            log.error("retrieve linked pages", e);
+        } // try-catch
+
+        return pages;
     }
 
     /*
@@ -340,12 +470,86 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
      */
     @Override
     public void setAutoVisitedOnRetrieval(boolean autoVisited) {
-        // TODO: ignore?
+        throw new RuntimeException("setAutoVisitedOnRetrieval not yet implemented!");
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ekip.ca.crawlingsimulator.WebGraph#fromID(long)
+     */
     @Override
-    public WebPage fromID(long id) {
-        // TODO Auto-generated method stub
-        return null;
+    public WebPage fromID(final long id) {
+        int qual = 0;
+
+        // Try to get quality of abort on error
+        try {
+            pstmt_select_from_id.setLong(1, id);
+            ResultSet rs = pstmt_select_from_id.executeQuery();
+
+            if (rs.getBoolean(1)) {
+                qual = 1;
+            } // if
+            rs.close();
+        } catch (Exception e) {
+            log.error("retieve page", e);
+            return null;
+        } // try-catch
+
+        // create new web page
+        return new WebPage() {
+            private long _id = id;
+            private boolean _visited = false;
+            private String _url = null;
+            private int _quality = 0;
+
+            @Override
+            public void setVisited(boolean visited) {
+                _visited = visited;
+            }
+
+            @Override
+            public boolean hasBeenVisited() {
+                return _visited;
+            }
+
+            @Override
+            public String getURL() {
+                // Return url if available
+                if (_url != null) {
+                    return null;
+                } // if
+
+                // Dynamically load url if neccessary
+                try {
+                    pstmt_select_all_from_id.setLong(1, _id);
+                    ResultSet rs = pstmt_select_all_from_id.executeQuery();
+                    if (rs.next()) {
+                        _url = rs.getString(3);
+                    } // if
+                    rs.close();
+                } catch (Exception e) {
+                    log.error("page url retrieval", e);
+                    return null;
+                } // try-catch
+
+                return _url;
+            }
+
+            @Override
+            public int getQuality() {
+                return _quality;
+            }
+
+            @Override
+            public List<WebPage> getLinkedPages() {
+                return getLinkedWebPages(this);
+            }
+
+            @Override
+            public long getID() {
+                return _id;
+            }
+        };
     }
 }
