@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<class-diagram version="1.1.5" icons="true" automaticImage="PNG" always-add-relationships="true" generalizations="true" 
+  realizations="true" associations="true" dependencies="true" nesting-relationships="true">  
+  <class id="1" language="java" name="ekip.ca.crawlingsimulator.MemoryWebGraphBuilder" project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/MemoryWebGraphBuilder.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="261" width="285" x="64" y="37"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <interface id="2" language="java" name="ekip.ca.crawlingsimulator.WebPage" project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/WebPage.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="153" width="217" x="64" y="778"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </interface>  
+  <class id="3" language="java" name="ekip.ca.crawlingsimulator.CrawlingSimulator.FileConverter" 
+    project="CrawlingSimulator" file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/CrawlingSimulator.java" 
+    binary="false" corner="BOTTOM_RIGHT">    
+    <position height="99" width="118" x="596" y="374"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <interface id="4" language="java" name="ekip.ca.crawlingsimulator.WebGraphBuilder" project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/WebGraphBuilder.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="135" width="134" x="146" y="374"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </interface>  
+  <class id="5" language="java" name="ekip.ca.crawlingsimulator.CrawlingSimulator" project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/CrawlingSimulator.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="297" width="198" x="714" y="37"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="6" language="java" name="ekip.ca.crawlingsimulator.DBWebGraphBuilder" project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/DBWebGraphBuilder.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="225" width="285" x="389" y="37"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <interface id="7" language="java" name="ekip.ca.crawlingsimulator.WebGraph" project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/WebGraph.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="117" width="285" x="125" y="621"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </interface>  
+  <class id="8" language="java" name="ekip.ca.crawlingsimulator.PriorityCrawlingQueue" project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/PriorityCrawlingQueue.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="135" width="179" x="952" y="37"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="9" language="java" name="ekip.ca.crawlingsimulator.PriorityCrawlingQueue.PriorityPage" 
+    project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/PriorityCrawlingQueue.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="207" width="158" x="973" y="374"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <interface id="10" language="java" name="ekip.ca.crawlingsimulator.CrawlingQueue" project="CrawlingSimulator" 
+    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/CrawlingQueue.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
+    <position height="117" width="179" x="754" y="374"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
+      visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </interface>  
+  <dependency id="11">    
+    <end type="SOURCE" refId="10"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <realization id="12">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="4"/>  
+  </realization>  
+  <dependency id="13">    
+    <end type="SOURCE" refId="8"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <nesting id="14">    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="3"/>  
+  </nesting>  
+  <association id="15">    
+    <bendpoint x="94" y="374"/>    
+    <bendpoint x="94" y="621"/>    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="16" name="seedURLs"/>      
+      <multiplicity id="17" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="2" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="18">    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <realization id="19">    
+    <bendpoint x="310" y="374"/>    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="7"/>  
+  </realization>  
+  <association id="20">    
+    <end type="SOURCE" refId="8" navigable="false">      
+      <attribute id="21" name="queue"/>      
+      <multiplicity id="22" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="9" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="23">    
+    <bendpoint x="31" y="374"/>    
+    <bendpoint x="31" y="621"/>    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="24" name="urlToWebPage"/>      
+      <multiplicity id="25" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="2" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="26">    
+    <bendpoint x="73" y="374"/>    
+    <bendpoint x="73" y="621"/>    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <realization id="27">    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="4"/>  
+  </realization>  
+  <realization id="28">    
+    <bendpoint x="115" y="374"/>    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="7"/>  
+  </realization>  
+  <realization id="29">    
+    <end type="SOURCE" refId="8"/>    
+    <end type="TARGET" refId="10"/>  
+  </realization>  
+  <association id="30">    
+    <end type="SOURCE" refId="8" navigable="false">      
+      <attribute id="31" name="webGraph"/>      
+      <multiplicity id="32" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="7" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="33">    
+    <bendpoint x="440" y="374"/>    
+    <bendpoint x="440" y="621"/>    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <dependency id="34">    
+    <end type="SOURCE" refId="9"/>    
+    <end type="TARGET" refId="2"/>  
+  </dependency>  
+  <dependency id="35">    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="6"/>  
+  </dependency>  
+  <dependency id="36">    
+    <end type="SOURCE" refId="4"/>    
+    <end type="TARGET" refId="7"/>  
+  </dependency>  
+  <dependency id="37">    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="7"/>  
+  </dependency>  
+  <association id="38">    
+    <bendpoint x="52" y="374"/>    
+    <bendpoint x="52" y="621"/>    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="39" name="webPages"/>      
+      <multiplicity id="40" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="2" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <nesting id="41">    
+    <end type="SOURCE" refId="8"/>    
+    <end type="TARGET" refId="9"/>  
+  </nesting>  
+  <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    accessors="true" visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true" static="true"/>    
+    <operations public="true" package="true" protected="true" private="true" static="true"/>  
+  </classifier-display>  
+  <association-display labels="true" multiplicity="true"/>
+</class-diagram>

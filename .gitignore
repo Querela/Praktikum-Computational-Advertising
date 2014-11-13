@@ -31,3 +31,5 @@ local.properties
 # Properties
 *.properties
 params
+*.db
+*.png

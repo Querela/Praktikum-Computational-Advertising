@@ -4,6 +4,7 @@
 package ekip.ca.crawlingsimulator;
 
 import java.io.File;
+import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,13 @@ public class CrawlingSimulator {
     public static class FileConverter implements IStringConverter<File> {
         @Override
         public File convert(String value) {
-            return new File(value);
+            File f = new File(value);
+
+            // if (!f.exists() || !f.isFile()) {
+            // throw new ParameterException("Invalid File! : value=" + value);
+            // } // if
+
+            return f;
         }
     }
 
@@ -54,6 +61,9 @@ public class CrawlingSimulator {
 
     @Parameter(names = { "-d", "--database-file" }, converter = FileConverter.class, required = true, description = "File to database.")
     protected File database_file = null;
+
+    @Parameter(names = { "-p", "--discard-database" }, description = "Discard an existing database.")
+    protected boolean discard_database = false;
 
     public CrawlingSimulator() {
 
@@ -84,12 +94,43 @@ public class CrawlingSimulator {
 
     public CrawlingSimulator run() throws Exception {
         // TODO: Load web graph
+        WebGraph wg = setupData();
 
         log.info("Start Crawling Simulator ...");
         // Start simulation
-        // TODO: simulate
+
+        runSimulation(wg);
+
         log.info("Stop Crawling Simulator.");
         return this;
+    }
+
+    public WebGraph setupData() throws Exception {
+        if (database_file.exists() && database_file.isFile() && discard_database) {
+            database_file.delete();
+        } // if
+        
+        DBWebGraphBuilder wg = new DBWebGraphBuilder();
+        wg.connectToDB(database_file);
+        
+        wg.loadGraph(graph_file);
+        wg.loadQualities(quality_file);
+        wg.loadSeeds(seed_file);
+        
+        return wg;
+    }
+
+    public void runSimulation(WebGraph wg) {
+        // TODO: simulate
+        
+
+//        PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
+//        pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
+//        pcq.addPages(Arrays.asList(new WebPage[] {}), 20);
+//        for (int i = 0; i < 7; i++) {
+//            Object o = pcq.getNextPage();
+//            log.info("o=" + o);
+//        } // for
     }
 
     /**
