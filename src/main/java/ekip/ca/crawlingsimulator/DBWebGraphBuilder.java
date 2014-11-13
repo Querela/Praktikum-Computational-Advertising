@@ -4,9 +4,7 @@ import java.awt.SystemColor;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.channels.FileChannel;
 import java.sql.Connection;
@@ -14,7 +12,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -25,8 +22,8 @@ import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
 import javax.swing.ProgressMonitorInputStream;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +48,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     public void connectToDB(File databaseFile) throws Exception {
         Class.forName("org.h2.Driver");
 
-        conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath(), "", "");
+        conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath()
+        /* + ";AUTOCOMMIT=ON;CACHE_SIZE=8192" */, "", "");
 
         // TODO: has data
         DatabaseMetaData dbmd = conn.getMetaData();
@@ -66,9 +64,9 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(100), UNIQUE KEY url_UNIQUE (url))");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT, FOREIGN KEY (id1) REFERENCES pages(id), FOREIGN KEY (id2) REFERENCES pages(id))");
 
-            pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)");
+            pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
             pstmt_insert_link = conn
-                    .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ? LIMIT 1), (SELECT id FROM pages WHERE url = ? LIMIT 1))");
+                    .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ? LIMIT 1), (SELECT p2.id FROM pages AS p2 WHERE p2.url = ? LIMIT 1))");
             pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
             pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ? LIMIT 1");
             pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ? LIMIT 1");
@@ -175,16 +173,22 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             final long file_size = graph_file.length();
             final String file_size_s = longToSize(file_size);
 
-            JLabel filenameLabel = new JLabel(graph_file.getAbsolutePath(), JLabel.RIGHT);
+            BufferedReader br = null;
             final JTextArea progressLabel = new JTextArea("Progress: ");
-            progressLabel.setBackground(SystemColor.control);
-            progressLabel.setEditable(false);
-            progressLabel.setFont(filenameLabel.getFont());
-            Object[] oos = new Object[] { "Reading & Parsing file ...", filenameLabel, progressLabel };
             FileInputStream fis = new FileInputStream(graph_file);
             final FileChannel fc = fis.getChannel();
-            BufferedReader br = new BufferedReader(
-                    new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
+
+            if (showProgress) {
+                JLabel filenameLabel = new JLabel(graph_file.getAbsolutePath(), SwingConstants.RIGHT);
+                progressLabel.setBackground(SystemColor.control);
+                progressLabel.setEditable(false);
+                progressLabel.setFont(filenameLabel.getFont());
+                Object[] oos = new Object[] { "Reading & Parsing graph file ...", filenameLabel, progressLabel };
+
+                br = new BufferedReader(new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
+            } else {
+                br = new BufferedReader(new InputStreamReader(fis));
+            } // if-else
 
             log.debug("Begin reading graph file ...");
             String line = null;
@@ -253,13 +257,15 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
                 try {
                     pstmt_insert_url.setString(1, url1);
+                    pstmt_insert_url.setString(2, url1);
                     pstmt_insert_url.executeUpdate();
                 } catch (Exception e) {
                     // log.error("insert url", e);
                 } // try-catch
 
                 try {
-                    pstmt_insert_url.setString(1, url1);
+                    pstmt_insert_url.setString(1, url2);
+                    pstmt_insert_url.setString(2, url2);
                     pstmt_insert_url.executeUpdate();
                 } catch (Exception e) {
                     // log.error("insert url", e);
@@ -301,16 +307,22 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             final long file_size = quality_file.length();
             final String file_size_s = longToSize(file_size);
 
-            JLabel filenameLabel = new JLabel(quality_file.getAbsolutePath(), JLabel.RIGHT);
+            BufferedReader br = null;
             final JTextArea progressLabel = new JTextArea("Progress: ");
-            progressLabel.setBackground(SystemColor.control);
-            progressLabel.setEditable(false);
-            progressLabel.setFont(filenameLabel.getFont());
-            Object[] oos = new Object[] { "Reading & Parsing qualities ...", filenameLabel, progressLabel };
             FileInputStream fis = new FileInputStream(quality_file);
             final FileChannel fc = fis.getChannel();
-            BufferedReader br = new BufferedReader(
-                    new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
+
+            if (showProgress) {
+                JLabel filenameLabel = new JLabel(quality_file.getAbsolutePath(), SwingConstants.RIGHT);
+                progressLabel.setBackground(SystemColor.control);
+                progressLabel.setEditable(false);
+                progressLabel.setFont(filenameLabel.getFont());
+                Object[] oos = new Object[] { "Reading & Parsing qualities ...", filenameLabel, progressLabel };
+
+                br = new BufferedReader(new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
+            } else {
+                br = new BufferedReader(new InputStreamReader(fis));
+            } // if-else
 
             log.debug("Begin reading quality mapping ...");
             String line = null;
@@ -325,6 +337,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                         @Override
                         public void run() {
                             try {
+                                log.debug("swing ... {}", myLineNr);
                                 // > time spend (milli seconds)
                                 long diff = System.currentTimeMillis() - start;
                                 long pos = fc.position();
@@ -368,15 +381,18 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     System.gc();
                 } // if
 
-                int i = line.indexOf('\t');
+                int i = line.indexOf(' ');
                 if (i == -1) {
-                    log.warn("Line {} contains no tab: {}", lineNr, line);
+                    log.warn("Line {} contains no space: {}", lineNr, line);
                     continue;
                 } // if
 
                 String url = line.substring(0, i);
                 String qual = line.substring(i + 1);
 
+                // Only update qualities where 1
+                // Ignore urls which are not in db -> can't be reached from
+                // graph
                 if ("1".equals(qual)) {
                     try {
                         pstmt_update_quality.setString(1, url);
@@ -406,7 +422,23 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return;
         } // if
 
-        // TODO: ...
+        try {
+            final long start = System.currentTimeMillis();
+            BufferedReader br = new BufferedReader(new FileReader(seed_file));
+
+            log.debug("Begin reading seed urls ...");
+            String line = null;
+            while ((line = br.readLine()) != null) {
+
+                log.debug("Seed: {}", line);
+                // TODO: create web pages / retrieve ids
+            } // while
+
+            log.info("Took {} for reading seeds.", longToTime(System.currentTimeMillis() - start));
+            br.close();
+        } catch (Exception e) {
+            log.error("read seed file fail", e);
+        } // try-catch
     }
 
     /*
@@ -497,11 +529,12 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // try-catch
 
         // create new web page
+        final int myQual = qual;
         return new WebPage() {
             private long _id = id;
             private boolean _visited = false;
             private String _url = null;
-            private int _quality = 0;
+            private int _quality = myQual;
 
             @Override
             public void setVisited(boolean visited) {
