@@ -106,31 +106,40 @@ public class CrawlingSimulator {
     }
 
     public WebGraph setupData() throws Exception {
-        if (database_file.exists() && database_file.isFile() && discard_database) {
-            database_file.delete();
+        if (discard_database) {
+            if (database_file.exists() && database_file.isFile()) {
+                log.info("Discarding existing database file ...");
+                database_file.delete();
+            } else {
+                // Check other file ...
+                File database_other_file = new File(database_file.getAbsolutePath() + ".mv.db");
+                if (database_other_file.exists() && database_other_file.isFile()) {
+                    log.info("Discarding other existing database file ...");
+                    database_other_file.delete();
+                } // if
+            } // if-else
         } // if
-        
+
         DBWebGraphBuilder wg = new DBWebGraphBuilder();
         wg.connectToDB(database_file);
-        
+
         wg.loadGraph(graph_file);
         wg.loadQualities(quality_file);
         wg.loadSeeds(seed_file);
-        
+
         return wg;
     }
 
     public void runSimulation(WebGraph wg) {
         // TODO: simulate
-        
 
-//        PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
-//        pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
-//        pcq.addPages(Arrays.asList(new WebPage[] {}), 20);
-//        for (int i = 0; i < 7; i++) {
-//            Object o = pcq.getNextPage();
-//            log.info("o=" + o);
-//        } // for
+        // PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
+        // pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
+        // pcq.addPages(Arrays.asList(new WebPage[] {}), 20);
+        // for (int i = 0; i < 7; i++) {
+        // Object o = pcq.getNextPage();
+        // log.info("o=" + o);
+        // } // for
     }
 
     /**

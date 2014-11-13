@@ -1,16 +1,30 @@
 package ekip.ca.crawlingsimulator;
 
+import java.awt.SystemColor;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.channels.FileChannel;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.Collections;
 import java.util.List;
+
+import javax.swing.JLabel;
+import javax.swing.JTextArea;
+import javax.swing.ProgressMonitorInputStream;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +101,38 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         });
     }
 
+    protected final static NumberFormat nf = new DecimalFormat("0.###");
+
+    protected static String longToSize(long size) {
+        if (size < 1024L) {
+            return nf.format(size) + " Byte";
+        } else if (size < 1048576L) {
+            return nf.format(size / 1024f) + " KB";
+        } else if (size < 1073741824L) {
+            return nf.format(size / 1048576f) + " MB";
+        } else if (size < 1099511627776L) {
+            return nf.format(size / 1073741824f) + " GB";
+        } else {
+            return size + " ?";
+        } // if-else*if-else
+    }
+
+    protected static String longToTime(long millis) {
+        if (millis < 60000L) {
+            return String.format("%.2f sec", millis / 1000f);
+        } else if (millis < 3600000L) {
+            return String.format("%.2f min", millis / 60000f);
+        } else if (millis < 216000000L) {
+            return String.format("%.2f hrs", millis / 3600000f);
+        } else {
+            return millis + " ?";
+        }
+    }
+
+    protected static String timeDiff(long start) {
+        return longToTime(System.currentTimeMillis() - start);
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -99,12 +145,53 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // if
 
         try {
-            BufferedReader br = new BufferedReader(new FileReader(graph_file));
-
+            final long file_size = graph_file.length();
+            final String file_size_s = longToSize(file_size);
             long lineNr = 0;
+            long numberOfExceptions = 0;
+            final long start = System.currentTimeMillis();
+
+            JLabel filenameLabel = new JLabel(graph_file.getAbsolutePath(), JLabel.RIGHT);
+            final JTextArea progressLabel = new JTextArea("Progress: ");
+            progressLabel.setBackground(SystemColor.control);
+            progressLabel.setEditable(false);
+            progressLabel.setFont(filenameLabel.getFont());
+            Object[] oos = new Object[] { "Reading & Parsing file ...", filenameLabel, progressLabel };
+            FileInputStream fis = new FileInputStream(graph_file);
+            final FileChannel fc = fis.getChannel();
+            BufferedReader br = new BufferedReader(
+                    new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
+
+            log.debug("Begin reading graph file ...");
             String line = null;
             while ((line = br.readLine()) != null) {
                 lineNr++;
+
+                // Update progress
+                final long myLineNr = lineNr;
+                final long myNumberOfExceptions = numberOfExceptions;
+
+                Runnable r = new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            long diff = System.currentTimeMillis() - start;
+                            progressLabel
+                                    .setText(String
+                                            .format("Progress: (%.2f %%)\n    In line %s\n    %s / %s\n    %d Exceptions\n    >>> %s (%.2f kL/s)",
+                                                    fc.position() / file_size * 100f, myLineNr,
+                                                    longToSize(fc.position()), file_size_s, myNumberOfExceptions,
+                                                    longToTime(diff), myLineNr * 1f / diff));
+                        } catch (Exception e) {
+                            progressLabel.setText(e.getLocalizedMessage());
+                        } // try-catch
+                    }
+                };
+
+                if (lineNr % 5000 == 0) {
+                    SwingUtilities.invokeLater(r);
+                } // if
+
                 int i = line.indexOf('\t');
                 if (i == -1) {
                     log.warn("Line {} contains no tab: {}", lineNr, line);
@@ -118,14 +205,16 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     pstmt_insert_url.setString(1, url1);
                     pstmt_insert_url.executeUpdate();
                 } catch (Exception e) {
-                    log.error("insert url", e);
+                    // log.error("insert url", e);
+                    numberOfExceptions++;
                 } // try-catch
 
                 try {
                     pstmt_insert_url.setString(1, url1);
                     pstmt_insert_url.executeUpdate();
                 } catch (Exception e) {
-                    log.error("insert url", e);
+                    // log.error("insert url", e);
+                    numberOfExceptions++;
                 } // try-catch
 
                 // TODO: add relation
@@ -184,8 +273,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
      */
     @Override
     public List<WebPage> getSeedWebPages() {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.emptyList();
     }
 
     /*
@@ -196,8 +284,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
      */
     @Override
     public List<WebPage> getLinkedWebPages(WebPage page) {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.emptyList();
     }
 
     /*
@@ -208,8 +295,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
      */
     @Override
     public void setAutoVisitedOnRetrieval(boolean autoVisited) {
-        // TODO Auto-generated method stub
-
+        // TODO: ignore?
     }
 
     @Override
@@ -217,6 +303,4 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         // TODO Auto-generated method stub
         return null;
     }
-
-    // protected WebPage createNewWebPage();
 }
