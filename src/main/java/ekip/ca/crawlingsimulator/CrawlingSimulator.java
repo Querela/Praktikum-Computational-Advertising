@@ -15,6 +15,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
 /**
+ * Crawling simulator for a web graph.
+ * 
  * @author Erik Körner
  * @author Immanuel Plath
  */
@@ -23,7 +25,7 @@ public class CrawlingSimulator {
     private final static Logger log = LoggerFactory.getLogger(CrawlingSimulator.class);
 
     /**
-     * Converts String to File object for JCommander.
+     * Converts String parameer to File object for JCommander.
      */
     public static class FileConverter implements IStringConverter<File> {
         @Override
@@ -65,10 +67,24 @@ public class CrawlingSimulator {
     @Parameter(names = { "-p", "--discard-database" }, description = "Discard an existing database.")
     protected boolean discard_database = false;
 
+    @Parameter(names = { "-i", "--show-progress" }, description = "Show progress while reading files etc.")
+    protected boolean show_progress = false;
+
+    /**
+     * Empty constructor.
+     */
     public CrawlingSimulator() {
 
     }
 
+    /**
+     * Initializes the CrawlingSimulator.
+     * 
+     * @param args
+     *            Command line args
+     * @return this
+     * @throws Exception
+     */
     public CrawlingSimulator init(String... args) throws Exception {
         log.debug("Initialize Crawling Simulator ...");
 
@@ -92,6 +108,12 @@ public class CrawlingSimulator {
         return this;
     }
 
+    /**
+     * Run whole process (reading web graph and simulating crawling).
+     * 
+     * @return this
+     * @throws Exception
+     */
     public CrawlingSimulator run() throws Exception {
         // TODO: Load web graph
         WebGraph wg = setupData();
@@ -105,6 +127,12 @@ public class CrawlingSimulator {
         return this;
     }
 
+    /**
+     * Creates a new or returns an existing web graph.
+     * 
+     * @return Web graph
+     * @throws Exception
+     */
     public WebGraph setupData() throws Exception {
         if (discard_database) {
             if (database_file.exists() && database_file.isFile()) {
@@ -120,7 +148,7 @@ public class CrawlingSimulator {
             } // if-else
         } // if
 
-        DBWebGraphBuilder wg = new DBWebGraphBuilder();
+        DBWebGraphBuilder wg = new DBWebGraphBuilder(show_progress);
         wg.connectToDB(database_file);
 
         wg.loadGraph(graph_file);
@@ -130,6 +158,12 @@ public class CrawlingSimulator {
         return wg;
     }
 
+    /**
+     * Runs the simulation
+     * 
+     * @param wg
+     *            Web graph to simulate on
+     */
     public void runSimulation(WebGraph wg) {
         // TODO: simulate
 

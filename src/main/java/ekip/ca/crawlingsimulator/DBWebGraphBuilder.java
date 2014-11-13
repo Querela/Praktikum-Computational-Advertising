@@ -32,12 +32,14 @@ import org.slf4j.LoggerFactory;
 public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     private final static Logger log = LoggerFactory.getLogger(DBWebGraphBuilder.class);
 
+    protected boolean showProgress = false;
     protected Connection conn = null;
     protected boolean hasData = false;
     protected PreparedStatement pstmt_insert_url;
+    protected PreparedStatement pstmt_insert_link;
 
-    public DBWebGraphBuilder() {
-
+    public DBWebGraphBuilder(boolean show_progress) {
+        this.showProgress = show_progress;
     }
 
     public void connectToDB(File databaseFile) throws Exception {
@@ -59,6 +61,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT, FOREIGN KEY (id1) REFERENCES pages(id), FOREIGN KEY (id2) REFERENCES pages(id))");
 
             pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)");
+            pstmt_insert_link = conn
+                    .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ? LIMIT 1), (SELECT id FROM pages WHERE url = ? LIMIT 1))");
 
             hasData = false;
 
@@ -103,6 +107,13 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
     protected final static NumberFormat nf = new DecimalFormat("0.###");
 
+    /**
+     * Converts a long to human file size.
+     * 
+     * @param size
+     *            long to convert
+     * @return String
+     */
     protected static String longToSize(long size) {
         if (size < 1024L) {
             return nf.format(size) + " Byte";
@@ -117,6 +128,13 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // if-else*if-else
     }
 
+    /**
+     * Converts milli seconds from long to time string.
+     * 
+     * @param millis
+     *            long to convert
+     * @return String
+     */
     protected static String longToTime(long millis) {
         if (millis < 60000L) {
             return String.format("%.2f sec", millis / 1000f);
@@ -127,10 +145,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } else {
             return millis + " ?";
         }
-    }
-
-    protected static String timeDiff(long start) {
-        return longToTime(System.currentTimeMillis() - start);
     }
 
     /*
@@ -145,11 +159,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // if
 
         try {
+            long lineNr = 0;
+            final long start = System.currentTimeMillis();
+
             final long file_size = graph_file.length();
             final String file_size_s = longToSize(file_size);
-            long lineNr = 0;
-            long numberOfExceptions = 0;
-            final long start = System.currentTimeMillis();
 
             JLabel filenameLabel = new JLabel(graph_file.getAbsolutePath(), JLabel.RIGHT);
             final JTextArea progressLabel = new JTextArea("Progress: ");
@@ -168,28 +182,54 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 lineNr++;
 
                 // Update progress
-                final long myLineNr = lineNr;
-                final long myNumberOfExceptions = numberOfExceptions;
+                if (showProgress) {
+                    final long myLineNr = lineNr;
 
-                Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            long diff = System.currentTimeMillis() - start;
-                            progressLabel
-                                    .setText(String
-                                            .format("Progress: (%.2f %%)\n    In line %s\n    %s / %s\n    %d Exceptions\n    >>> %s (%.2f kL/s)",
-                                                    fc.position() / file_size * 100f, myLineNr,
-                                                    longToSize(fc.position()), file_size_s, myNumberOfExceptions,
-                                                    longToTime(diff), myLineNr * 1f / diff));
-                        } catch (Exception e) {
-                            progressLabel.setText(e.getLocalizedMessage());
-                        } // try-catch
-                    }
-                };
+                    Runnable r = new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                // > time spend (milli seconds)
+                                long diff = System.currentTimeMillis() - start;
+                                long pos = fc.position();
+                                // > spent time (seconds)
+                                // ---- diff / 1000
+                                // > speed (line numbers per second):
+                                // ---- myLineNr / (diff / 1000)
+                                // > (for 1000 lines):
+                                // ---- myLineNr / (diff / 1000) / 1000
+                                // ---- myLineNr / diff
+                                float speed = myLineNr * 1f / diff;
+                                // > line numbers per byte:
+                                // ---- myLineNr / (float) fc.position()
+                                // > line numbers for whole file:
+                                // ---- myLineNr / fc.position() * file_size
+                                // > time for all lines (in seconds)
+                                // ---- (myLineNr / fc.position() * file_size) /
+                                // (speed * 1000)
+                                // > (to millis for convert function)
+                                // ---- (myLineNr / fc.position() * file_size) /
+                                // (speed * 1000) * 1000
+                                // ---- (myLineNr / fc.position() * file_size) /
+                                // speed
+                                long timeLeft = (long) (myLineNr / (float) pos * file_size / speed);
+                                progressLabel
+                                        .setText(String
+                                                .format("Progress: (%.2f %%)\n    In line %s (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
+                                                        pos * 100f / file_size, myLineNr, speed, longToSize(pos),
+                                                        file_size_s, longToTime(diff), longToTime(timeLeft)));
+                            } catch (Exception e) {
+                                progressLabel.setText(e.getLocalizedMessage());
+                            } // try-catch
+                        }
+                    };
 
-                if (lineNr % 5000 == 0) {
-                    SwingUtilities.invokeLater(r);
+                    if (lineNr % 5000 == 0) {
+                        SwingUtilities.invokeLater(r);
+                    } // if
+                } // if
+                if (lineNr % 50000 == 0) {
+                    System.gc();
                 } // if
 
                 int i = line.indexOf('\t');
@@ -206,7 +246,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     pstmt_insert_url.executeUpdate();
                 } catch (Exception e) {
                     // log.error("insert url", e);
-                    numberOfExceptions++;
                 } // try-catch
 
                 try {
@@ -214,12 +253,18 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     pstmt_insert_url.executeUpdate();
                 } catch (Exception e) {
                     // log.error("insert url", e);
-                    numberOfExceptions++;
                 } // try-catch
 
-                // TODO: add relation
-
+                try {
+                    pstmt_insert_link.setString(1, url1);
+                    pstmt_insert_link.setString(2, url2);
+                    pstmt_insert_link.executeUpdate();
+                } catch (Exception e) {
+                    log.error(e.getLocalizedMessage());
+                } // try-catch
             } // while
+
+            log.info("Took {}", longToTime(System.currentTimeMillis() - start));
 
             br.close();
         } catch (Exception e) {

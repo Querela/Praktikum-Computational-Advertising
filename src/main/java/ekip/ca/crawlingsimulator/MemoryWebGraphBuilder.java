@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Deprecated
 public class MemoryWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
     protected Set<WebPage> webPages;
@@ -42,7 +43,7 @@ public class MemoryWebGraphBuilder implements WebGraph, WebGraphBuilder {
         WebPage wp = new WebPage() {
             private String _url = url;
             private boolean _visited = false;
-            private float _quality = 0.f;
+            private int _quality = 0;
             
             @Override
             public long getID() {
@@ -66,7 +67,7 @@ public class MemoryWebGraphBuilder implements WebGraph, WebGraphBuilder {
             }
 
             @Override
-            public float getQuality() {
+            public int getQuality() {
                 return _quality;
             }
 
