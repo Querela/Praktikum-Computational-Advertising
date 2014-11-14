@@ -55,6 +55,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         Class.forName("org.h2.Driver");
 
         conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath()
+                + ";LOG=0;CACHE_SIZE=65536;LOCK_MODE=0;UNDO_LOG=0;AUTOCOMMIT=ON;CACHE_TYPE=SOFT_LRU"
         /* + ";AUTOCOMMIT=ON;CACHE_SIZE=8192" */, "", "");
 
         // TODO: has data
@@ -67,8 +68,9 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             log.debug("database does not exists");
             Statement stmt = conn.createStatement();
 
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL, UNIQUE KEY url_UNIQUE (url))");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations_url (url1 VARCHAR(40), url2 VARCHAR(40), FOREIGN KEY (url1) REFERENCES pages(url), FOREIGN KEY (url2) REFERENCES pages(url))");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL)");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations_url (url1 VARCHAR(40), url2 VARCHAR(40))");
+            stmt.executeUpdate("CREATE INDEX INDEX_pages_url ON pages(url)");
 
             pstmt_insert_url = conn
                     .prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
@@ -374,11 +376,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                         pgrs.getTotalTime() / 1000.f);
             } // if
 
-            // Clean up?
-            if (pgrs.getLineNr() % gc_line_count == 0) {
-                System.gc();
-            } // if
-
             // Start of code
 
             int i = line.indexOf('\t');
@@ -417,6 +414,22 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
         pgrs.finish();
         log.info("Took {} for graph parsing.", longToTime(pgrs.getTotalTime()));
+
+        log.info("Adding constraints and indizes to db web graph");
+
+        try {
+            Statement stmt = conn.createStatement();
+
+            stmt.executeUpdate("ALTER TABLE pages ADD UNIQUE KEY url_UNIQUE (url)");
+            stmt.executeUpdate("ALTER TABLE relations_url ADD FOREIGN KEY (url1) REFERENCES pages(url)");
+            stmt.executeUpdate("ALTER TABLE relations_url ADD FOREIGN KEY (url2) REFERENCES pages(url)");
+
+            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations_url(url1, url2)");
+
+            stmt.close();
+        } catch (Exception e) {
+            log.error("sql update", e);
+        } // try-catch
     }
 
     /*
@@ -442,11 +455,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             if (pgrs.hasNewPercent()) {
                 log.debug("Reading file {} ... {} % ({} s)", quality_file.getName(), pgrs.getNewPercent(),
                         pgrs.getTotalTime() / 1000.f);
-            } // if
-
-            // Clean up?
-            if (pgrs.getLineNr() % gc_line_count == 0) {
-                System.gc();
             } // if
 
             // Start of code
