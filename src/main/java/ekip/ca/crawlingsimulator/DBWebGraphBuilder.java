@@ -1,10 +1,11 @@
 package ekip.ca.crawlingsimulator;
 
-import java.awt.SystemColor;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.channels.FileChannel;
 import java.sql.Connection;
@@ -44,6 +45,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     protected PreparedStatement pstmt_select_from_id;
     protected PreparedStatement pstmt_select_linked;
     protected PreparedStatement pstmt_select_all_from_id;
+    protected PreparedStatement pstmt_select_all_from_url;
 
     public DBWebGraphBuilder(boolean show_progress) {
         this.showProgress = show_progress;
@@ -65,17 +67,19 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             log.debug("database does not exists");
             Statement stmt = conn.createStatement();
 
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(100), UNIQUE KEY url_UNIQUE (url))");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT, FOREIGN KEY (id1) REFERENCES pages(id), FOREIGN KEY (id2) REFERENCES pages(id))");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL, UNIQUE KEY url_UNIQUE (url))");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations_url (url1 VARCHAR(40), url2 VARCHAR(40), FOREIGN KEY (url1) REFERENCES pages(url), FOREIGN KEY (url2) REFERENCES pages(url))");
 
             pstmt_insert_url = conn
                     .prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
-            pstmt_insert_link = conn
-                    .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ? LIMIT 1), (SELECT p2.id FROM pages AS p2 WHERE p2.url = ? LIMIT 1))");
+            pstmt_insert_link = conn.prepareStatement("INSERT INTO relations_url (url1, url2) VALUES (?, ?)");
             pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
             pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ? LIMIT 1");
             pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ? LIMIT 1");
-            pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
+            pstmt_select_all_from_url = conn
+                    .prepareStatement("SELECT id, quality, url FROM pages WHERE url = ? LIMIT 1");
+            pstmt_select_linked = conn
+                    .prepareStatement("SELECT p.id FROM relations_url AS r, pages AS p WHERE r.url1 = ? AND r.url2 = p.url");
 
             hasData = false;
 
@@ -189,6 +193,165 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 longToTime(timeLeft));
     }
 
+    protected static class Progress {
+        private final long start;
+        public long last_start;
+        private long line_nr;
+        private long last_line_nr = line_nr;
+        private float speed = 0.f;
+        private float last_speed = speed;
+        private long diff_total;
+        private long diff_delta;
+        private long time_left;
+        private final FileChannel fc;
+        private long position;
+        private final long file_size;
+        private final String file_size_s;
+        private float percent;
+
+        private boolean has_new_percent;
+        private int last_percent;
+
+        private boolean show_progress;
+        private BufferedReader br = null;
+        private JTextArea progress_label;
+
+        public Progress(final File file, boolean show_progress) {
+            this.line_nr = 0;
+
+            this.show_progress = show_progress;
+            this.start = System.currentTimeMillis();
+
+            this.file_size = file.length();
+            this.file_size_s = longToSize(file_size);
+
+            FileInputStream fis = null;
+            try {
+                fis = new FileInputStream(file);
+            } catch (FileNotFoundException e) {
+                log.error("open file", e);
+            } // try-catch
+            this.fc = fis.getChannel();
+
+            if (show_progress) {
+                progress_label = new JTextArea("Progress: ");
+                JLabel filename_label = new JLabel(file.getAbsolutePath(), SwingConstants.RIGHT);
+                progress_label.setBackground(filename_label.getBackground());
+                progress_label.setEditable(false);
+                progress_label.setFont(filename_label.getFont());
+                Object[] oos = new Object[] { "Reading & Parsing file ...", filename_label, progress_label };
+
+                br = new BufferedReader(new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
+            } else {
+                br = new BufferedReader(new InputStreamReader(fis));
+            } // if-else
+
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    log.debug("Run ShutdownHook: Close file {} ...", file.getName());
+                    finish();
+                }
+            });
+        }
+
+        public void finish() {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    log.error("Close file");
+                } // try-catch
+            } // if
+        }
+
+        public String nextLine() {
+            try {
+                String line = br.readLine();
+                line_nr++;
+                return line;
+            } catch (IOException e) {
+                log.error("read line", e);
+                return null;
+            } // try-catch
+        }
+
+        public long getLineNr() {
+            return line_nr;
+        }
+
+        public Progress update() {
+            try {
+                position = fc.position();
+            } catch (IOException e) {
+            } // try-catch
+
+            // Check if new percent
+            float temp_percent = position * 100.f / file_size;
+            if ((((int) temp_percent) - last_percent) > 0) {
+                has_new_percent = true;
+                last_percent = (int) temp_percent;
+            } // if
+            percent = temp_percent;
+
+            // Update progress
+            if (show_progress && (line_nr % refresh_line_count == 0)) {
+                diff_total = System.currentTimeMillis() - start;
+                diff_delta = diff_total + start - last_start;
+
+                speed = ((1 - refresh_beta) * last_speed)
+                        + (refresh_beta * ((line_nr - last_line_nr) * 1.f / diff_delta));
+
+                time_left = (long) (line_nr / (float) position * (file_size - position) / speed);
+
+                // Values for next iteration
+                last_line_nr = line_nr;
+                last_start = diff_delta + last_start;
+                last_speed = speed;
+
+                // Present values
+                Runnable r = new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            progress_label.setText(getFormatted());
+                        } catch (Exception e) {
+                            progress_label.setText(e.getLocalizedMessage());
+                        } // try-catch
+                    }
+                };
+
+                SwingUtilities.invokeLater(r);
+            } // if
+
+            return this;
+        }
+
+        public String getFormatted() {
+            return String.format(
+                    "Progress: (%.2f %%)\n    In line %d (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
+                    percent, line_nr, speed, longToSize(position), file_size_s, longToTime(diff_total),
+                    longToTime(time_left));
+        }
+
+        public boolean hasNewPercent() {
+            if (has_new_percent) {
+                has_new_percent = false;
+                return true;
+            } // if
+
+            return false;
+        }
+
+        public int getNewPercent() {
+            return last_percent;
+        }
+
+        public long getTotalTime() {
+            return System.currentTimeMillis() - start;
+        }
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -200,119 +363,60 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return;
         } // if
 
-        try {
-            final long start = System.currentTimeMillis();
-            long lineNr = 0;
-            long lastLineNr = lineNr;
-            float lastSpeed = 0.f;
-            long lastStart = start;
-            final long file_size = graph_file.length();
-            final String file_size_s = longToSize(file_size);
+        final Progress pgrs = new Progress(graph_file, showProgress);
 
-            BufferedReader br = null;
-            final JTextArea progressLabel = new JTextArea("Progress: ");
-            FileInputStream fis = new FileInputStream(graph_file);
-            final FileChannel fc = fis.getChannel();
+        log.debug("Begin reading graph file ...");
+        String line = null;
+        while ((line = pgrs.nextLine()) != null) {
+            pgrs.update();
+            if (pgrs.hasNewPercent()) {
+                log.debug("Reading file {} ... {} % ({} s)", graph_file.getName(), pgrs.getNewPercent(),
+                        pgrs.getTotalTime() / 1000.f);
+            } // if
 
-            if (showProgress) {
-                JLabel filenameLabel = new JLabel(graph_file.getAbsolutePath(), SwingConstants.RIGHT);
-                progressLabel.setBackground(SystemColor.control);
-                progressLabel.setEditable(false);
-                progressLabel.setFont(filenameLabel.getFont());
-                Object[] oos = new Object[] { "Reading & Parsing graph file ...", filenameLabel, progressLabel };
+            // Clean up?
+            if (pgrs.getLineNr() % gc_line_count == 0) {
+                System.gc();
+            } // if
 
-                br = new BufferedReader(new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
-            } else {
-                br = new BufferedReader(new InputStreamReader(fis));
-            } // if-else
+            // Start of code
 
-            log.debug("Begin reading graph file ...");
-            String line = null;
-            while ((line = br.readLine()) != null) {
-                lineNr++;
+            int i = line.indexOf('\t');
+            if (i == -1) {
+                log.warn("Line {} contains no tab: {}", pgrs.getLineNr(), line);
+                continue;
+            } // if
 
-                // Update progress
-                if (showProgress && (lineNr % refresh_line_count == 0)) {
-                    // current values
-                    final long myLineNr = lineNr;
-                    final long totalDiff = System.currentTimeMillis() - start;
-                    final long diff = totalDiff + start - lastStart;
-                    final float speed = ((1 - refresh_beta) * lastSpeed)
-                            + (refresh_beta * ((lineNr - lastLineNr) * 1f / diff));
-                    final long pos = fc.position();
-                    final long timeLeft = (long) (lineNr / (float) pos * (file_size - pos) / speed);
-                    final float percent = pos * 100f / file_size;
+            String url1 = line.substring(0, i);
+            String url2 = line.substring(i + 1);
 
-                    // Values for next iteration
-                    lastLineNr = lineNr;
-                    lastStart = diff + lastStart;
-                    lastSpeed = speed;
+            try {
+                pstmt_insert_url.setString(1, url1);
+                pstmt_insert_url.setString(2, url1);
+                pstmt_insert_url.executeUpdate();
+            } catch (Exception e) {
+                log.error("insert url", e);
+            } // try-catch
 
-                    // Present values
-                    Runnable r = new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                progressLabel
-                                        .setText(String
-                                                .format("Progress: (%.2f %%)\n    In line %d (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
-                                                        percent, myLineNr, speed, longToSize(pos), file_size_s,
-                                                        longToTime(totalDiff), longToTime(timeLeft)));
-                            } catch (Exception e) {
-                                progressLabel.setText(e.getLocalizedMessage());
-                            } // try-catch
-                        }
-                    };
+            try {
+                pstmt_insert_url.setString(1, url2);
+                pstmt_insert_url.setString(2, url2);
+                pstmt_insert_url.executeUpdate();
+            } catch (Exception e) {
+                log.error("insert url", e);
+            } // try-catch
 
-                    SwingUtilities.invokeLater(r);
-                } // if
-                  // Clean up?
-                if (lineNr % gc_line_count == 0) {
-                    System.gc();
-                } // if
+            try {
+                pstmt_insert_link.setString(1, url1);
+                pstmt_insert_link.setString(2, url2);
+                pstmt_insert_link.executeUpdate();
+            } catch (Exception e) {
+                log.error(e.getLocalizedMessage());
+            } // try-catch
+        } // while
 
-                // Start of code
-
-                int i = line.indexOf('\t');
-                if (i == -1) {
-                    log.warn("Line {} contains no tab: {}", lineNr, line);
-                    continue;
-                } // if
-
-                String url1 = line.substring(0, i);
-                String url2 = line.substring(i + 1);
-
-                try {
-                    pstmt_insert_url.setString(1, url1);
-                    pstmt_insert_url.setString(2, url1);
-                    pstmt_insert_url.executeUpdate();
-                } catch (Exception e) {
-                    log.error("insert url", e);
-                } // try-catch
-
-                try {
-                    pstmt_insert_url.setString(1, url2);
-                    pstmt_insert_url.setString(2, url2);
-                    pstmt_insert_url.executeUpdate();
-                } catch (Exception e) {
-                    log.error("insert url", e);
-                } // try-catch
-
-                try {
-                    pstmt_insert_link.setString(1, url1);
-                    pstmt_insert_link.setString(2, url2);
-                    pstmt_insert_link.executeUpdate();
-                } catch (Exception e) {
-                    log.error(e.getLocalizedMessage());
-                } // try-catch
-            } // while
-
-            log.info("Took {} for graph parsing.", longToTime(System.currentTimeMillis() - start));
-
-            br.close();
-        } catch (Exception e) {
-            log.error("read graph file fail", e);
-        } // try-catch
+        pgrs.finish();
+        log.info("Took {} for graph parsing.", longToTime(pgrs.getTotalTime()));
     }
 
     /*
@@ -327,110 +431,51 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return;
         } // if
 
-        try {
-            final long start = System.currentTimeMillis();
-            long lineNr = 0;
-            long lastLineNr = lineNr;
-            float lastSpeed = 0.f;
-            long lastStart = start;
-            final long file_size = quality_file.length();
-            final String file_size_s = longToSize(file_size);
+        final Progress pgrs = new Progress(quality_file, showProgress);
 
-            BufferedReader br = null;
-            final JTextArea progressLabel = new JTextArea("Progress: ");
-            FileInputStream fis = new FileInputStream(quality_file);
-            final FileChannel fc = fis.getChannel();
+        log.debug("Begin reading quality mapping ...");
+        String line = null;
+        while ((line = pgrs.nextLine()) != null) {
 
-            if (showProgress) {
-                JLabel filenameLabel = new JLabel(quality_file.getAbsolutePath(), SwingConstants.RIGHT);
-                progressLabel.setBackground(SystemColor.control);
-                progressLabel.setEditable(false);
-                progressLabel.setFont(filenameLabel.getFont());
-                Object[] oos = new Object[] { "Reading & Parsing qualities ...", filenameLabel, progressLabel };
+            // Update progress
+            pgrs.update();
+            if (pgrs.hasNewPercent()) {
+                log.debug("Reading file {} ... {} % ({} s)", quality_file.getName(), pgrs.getNewPercent(),
+                        pgrs.getTotalTime() / 1000.f);
+            } // if
 
-                br = new BufferedReader(new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
-            } else {
-                br = new BufferedReader(new InputStreamReader(fis));
-            } // if-else
+            // Clean up?
+            if (pgrs.getLineNr() % gc_line_count == 0) {
+                System.gc();
+            } // if
 
-            log.debug("Begin reading quality mapping ...");
-            String line = null;
-            while ((line = br.readLine()) != null) {
-                lineNr++;
+            // Start of code
 
-                // Update progress
-                // Update progress
-                if (showProgress && (lineNr % refresh_line_count == 0)) {
-                    // current values
-                    final long myLineNr = lineNr;
-                    final long totalDiff = System.currentTimeMillis() - start;
-                    final long diff = totalDiff + start - lastStart;
-                    final float speed = ((1 - refresh_beta) * lastSpeed)
-                            + (refresh_beta * ((lineNr - lastLineNr) * 1f / diff));
-                    final long pos = fc.position();
-                    final long timeLeft = (long) (lineNr / (float) pos * (file_size - pos) / speed);
-                    final float percent = pos * 100f / file_size;
+            int i = line.indexOf(' ');
+            if (i == -1) {
+                log.warn("Line {} contains no space: {}", pgrs.getLineNr(), line);
+                continue;
+            } // if
 
-                    // Values for next iteration
-                    lastLineNr = lineNr;
-                    lastStart = diff + lastStart;
-                    lastSpeed = speed;
+            String url = line.substring(0, i);
+            String qual = line.substring(i + 1);
 
-                    // Present values
-                    Runnable r = new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                // formatProgressMessage(myLineNr,
-                                // fc.position(), file_size, start)
-                                progressLabel
-                                        .setText(String
-                                                .format("Progress: (%.2f %%)\n    In line %d (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
-                                                        percent, myLineNr, speed, longToSize(pos), file_size_s,
-                                                        longToTime(totalDiff), longToTime(timeLeft)));
-                            } catch (Exception e) {
-                                progressLabel.setText(e.getLocalizedMessage());
-                            } // try-catch
-                        }
-                    };
+            // Only update qualities where 1
+            // Ignore urls which are not in db -> can't be reached from
+            // graph
+            if ("1".equals(qual)) {
+                try {
+                    pstmt_update_quality.setString(1, url);
+                    pstmt_update_quality.executeUpdate();
+                } catch (Exception e) {
+                    log.error(e.getLocalizedMessage());
+                } // try-catch
+            } // if
+        } // while
 
-                    SwingUtilities.invokeLater(r);
-                } // if
-                  // Clean up?
-                if (lineNr % gc_line_count == 0) {
-                    System.gc();
-                } // if
+        log.info("Took {} for quality update.", longToTime(pgrs.getTotalTime()));
 
-                // Start of code
-
-                int i = line.indexOf(' ');
-                if (i == -1) {
-                    log.warn("Line {} contains no space: {}", lineNr, line);
-                    continue;
-                } // if
-
-                String url = line.substring(0, i);
-                String qual = line.substring(i + 1);
-
-                // Only update qualities where 1
-                // Ignore urls which are not in db -> can't be reached from
-                // graph
-                if ("1".equals(qual)) {
-                    try {
-                        pstmt_update_quality.setString(1, url);
-                        pstmt_update_quality.executeUpdate();
-                    } catch (Exception e) {
-                        log.error(e.getLocalizedMessage());
-                    } // try-catch
-                } // if
-            } // while
-
-            log.info("Took {} for quality update.", longToTime(System.currentTimeMillis() - start));
-
-            br.close();
-        } catch (Exception e) {
-            log.error("read quality file fail", e);
-        } // try-catch
+        pgrs.finish();
     }
 
     /*
@@ -499,7 +544,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
         try {
             // Query all ids from linked pages
-            pstmt_select_linked.setLong(1, page.getID());
+            pstmt_select_linked.setString(1, page.getURL());
             ResultSet rs = pstmt_select_linked.executeQuery();
             while (rs.next()) {
                 // Retrieve each page for id
@@ -525,6 +570,21 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     @Override
     public void setAutoVisitedOnRetrieval(boolean autoVisited) {
         throw new RuntimeException("setAutoVisitedOnRetrieval not yet implemented!");
+    }
+
+    public WebPage fromURL(final String url) {
+        // Try to get quality of abort on error
+        try {
+            pstmt_select_all_from_url.setString(1, url);
+            ResultSet rs = pstmt_select_from_id.executeQuery();
+            long id = rs.getLong(1);
+            rs.close();
+
+            return fromID(id);
+        } catch (Exception e) {
+            log.error("retieve page", e);
+            return null;
+        } // try-catch
     }
 
     /*

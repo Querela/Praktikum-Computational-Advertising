@@ -114,14 +114,14 @@ public class CrawlingSimulator {
      * @throws Exception
      */
     public CrawlingSimulator run() throws Exception {
-        // TODO: Load web graph
+        // read/load data
+        log.info("Set up data (web graph) ...");
         WebGraph wg = setupData();
+        log.info("Data ready.");
 
+        // simulate
         log.info("Start Crawling Simulator ...");
-        // Start simulation
-
         runSimulation(wg);
-
         log.info("Stop Crawling Simulator.");
         return this;
     }
