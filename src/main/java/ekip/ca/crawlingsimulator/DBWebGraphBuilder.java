@@ -55,7 +55,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         Class.forName("org.h2.Driver");
 
         conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath()
-                + ";LOG=0;CACHE_SIZE=65536;LOCK_MODE=0;UNDO_LOG=0;AUTOCOMMIT=ON;CACHE_TYPE=SOFT_LRU"
+                + ";LOG=0;LOCK_MODE=0;UNDO_LOG=0;AUTOCOMMIT=ON;CACHE_TYPE=SOFT_LRU"
         /* + ";AUTOCOMMIT=ON;CACHE_SIZE=8192" */, "", "");
 
         // TODO: has data
@@ -69,19 +69,20 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             Statement stmt = conn.createStatement();
 
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL)");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations_url (url1 VARCHAR(40), url2 VARCHAR(40))");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT(40))");
             stmt.executeUpdate("CREATE INDEX INDEX_pages_url ON pages(url)");
 
             pstmt_insert_url = conn
                     .prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
-            pstmt_insert_link = conn.prepareStatement("INSERT INTO relations_url (url1, url2) VALUES (?, ?)");
+            pstmt_insert_link = conn
+                    .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ?), (SELECT id FROM pages WHERE url = ?))");
             pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
             pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ? LIMIT 1");
             pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ? LIMIT 1");
             pstmt_select_all_from_url = conn
                     .prepareStatement("SELECT id, quality, url FROM pages WHERE url = ? LIMIT 1");
             pstmt_select_linked = conn
-                    .prepareStatement("SELECT p.id FROM relations_url AS r, pages AS p WHERE r.url1 = ? AND r.url2 = p.url");
+                    .prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
 
             hasData = false;
 
@@ -421,10 +422,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             Statement stmt = conn.createStatement();
 
             stmt.executeUpdate("ALTER TABLE pages ADD UNIQUE KEY url_UNIQUE (url)");
-            stmt.executeUpdate("ALTER TABLE relations_url ADD FOREIGN KEY (url1) REFERENCES pages(url)");
-            stmt.executeUpdate("ALTER TABLE relations_url ADD FOREIGN KEY (url2) REFERENCES pages(url)");
+            stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id1) REFERENCES pages(id)");
+            stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id2) REFERENCES pages(id)");
 
-            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations_url(url1, url2)");
+            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations_url(id1, id2)");
 
             stmt.close();
         } catch (Exception e) {
@@ -552,7 +553,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
         try {
             // Query all ids from linked pages
-            pstmt_select_linked.setString(1, page.getURL());
+            pstmt_select_linked.setLong(1, page.getID());
             ResultSet rs = pstmt_select_linked.executeQuery();
             while (rs.next()) {
                 // Retrieve each page for id
