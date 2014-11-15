@@ -40,6 +40,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     protected Connection conn = null;
     protected boolean hasData = false;
     protected PreparedStatement pstmt_insert_url;
+    protected PreparedStatement pstmt_insert_good_url;
     protected PreparedStatement pstmt_insert_link;
     protected PreparedStatement pstmt_update_quality;
     protected PreparedStatement pstmt_select_from_id;
@@ -74,6 +75,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
             pstmt_insert_url = conn
                     .prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
+            pstmt_insert_good_url = conn
+                    .prepareStatement("INSERT INTO pages (url, quality) SELECT ?, TRUE FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
             pstmt_insert_link = conn
                     .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ?), (SELECT id FROM pages WHERE url = ?))");
             pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
@@ -81,8 +84,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ? LIMIT 1");
             pstmt_select_all_from_url = conn
                     .prepareStatement("SELECT id, quality, url FROM pages WHERE url = ? LIMIT 1");
-            pstmt_select_linked = conn
-                    .prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
+            pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
 
             hasData = false;
 
@@ -416,20 +418,32 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         pgrs.finish();
         log.info("Took {} for graph parsing.", longToTime(pgrs.getTotalTime()));
 
-        log.info("Adding constraints and indizes to db web graph");
-
+        log.info("Adding unique constraints to db web graph");
         try {
             Statement stmt = conn.createStatement();
-
             stmt.executeUpdate("ALTER TABLE pages ADD UNIQUE KEY url_UNIQUE (url)");
-            stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id1) REFERENCES pages(id)");
-            stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id2) REFERENCES pages(id)");
-
-            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations_url(id1, id2)");
-
             stmt.close();
         } catch (Exception e) {
-            log.error("sql update", e);
+            log.error("sql update: unique", e);
+        } // try-catch
+
+        log.info("Adding indix to db web graph");
+        try {
+            Statement stmt = conn.createStatement();
+            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations_url(id1, id2)");
+            stmt.close();
+        } catch (Exception e) {
+            log.error("sql update: index relations", e);
+        } // try-catch
+
+        log.info("Adding referential constraints to db web graph");
+        try {
+            Statement stmt = conn.createStatement();
+            stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id1) REFERENCES pages(id)");
+            stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id2) REFERENCES pages(id)");
+            stmt.close();
+        } catch (Exception e) {
+            log.error("sql update: references", e);
         } // try-catch
     }
 
@@ -474,7 +488,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             // graph
             if ("1".equals(qual)) {
                 try {
-                    pstmt_update_quality.setString(1, url);
+                    pstmt_insert_good_url.setString(1, url);
+                    pstmt_insert_good_url.setString(2, url);
                     pstmt_update_quality.executeUpdate();
                 } catch (Exception e) {
                     log.error(e.getLocalizedMessage());
@@ -482,7 +497,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // if
         } // while
 
-        log.info("Took {} for quality update.", longToTime(pgrs.getTotalTime()));
+        log.info("Took {} for quality insert.", longToTime(pgrs.getTotalTime()));
 
         pgrs.finish();
     }

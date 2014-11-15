@@ -150,8 +150,8 @@ public class CrawlingSimulator {
         DBWebGraphBuilder wg = new DBWebGraphBuilder(show_progress);
         wg.connectToDB(database_file);
 
-        wg.loadGraph(graph_file);
         wg.loadQualities(quality_file);
+        wg.loadGraph(graph_file);
         wg.loadSeeds(seed_file);
 
         return wg;
