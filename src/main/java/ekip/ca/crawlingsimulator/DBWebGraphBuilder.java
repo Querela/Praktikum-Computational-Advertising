@@ -195,6 +195,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 longToTime(timeLeft));
     }
 
+    /**
+     * Class to monitor progress when reading lines from a large file. Can
+     * automatically update a GUI.
+     */
     protected static class Progress {
         private final long start;
         public long last_start;
@@ -218,6 +222,14 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         private BufferedReader br = null;
         private JTextArea progress_label;
 
+        /**
+         * Creates new progress object.
+         * 
+         * @param file
+         *            File to read
+         * @param show_progress
+         *            Show visible GUI
+         */
         public Progress(final File file, boolean show_progress) {
             this.line_nr = 0;
 
@@ -227,6 +239,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             this.file_size = file.length();
             this.file_size_s = longToSize(file_size);
 
+            // Stream to read from
             FileInputStream fis = null;
             try {
                 fis = new FileInputStream(file);
@@ -235,6 +248,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // try-catch
             this.fc = fis.getChannel();
 
+            // Create thingies when showing GUI
             if (show_progress) {
                 progress_label = new JTextArea("Progress: ");
                 JLabel filename_label = new JLabel(file.getAbsolutePath(), SwingConstants.RIGHT);
@@ -248,6 +262,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 br = new BufferedReader(new InputStreamReader(fis));
             } // if-else
 
+            // Close file at end if not already closed
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
                 public void run() {
@@ -257,6 +272,9 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             });
         }
 
+        /**
+         * Close file.
+         */
         public void finish() {
             if (br != null) {
                 try {
@@ -267,6 +285,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // if
         }
 
+        /**
+         * Reads next line from file.
+         * 
+         * @return String or null if no more lines.
+         */
         public String nextLine() {
             try {
                 String line = br.readLine();
@@ -278,10 +301,20 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // try-catch
         }
 
+        /**
+         * Get current line number.
+         * 
+         * @return long
+         */
         public long getLineNr() {
             return line_nr;
         }
 
+        /**
+         * Update progress.
+         * 
+         * @return this
+         */
         public Progress update() {
             try {
                 position = fc.position();
@@ -301,9 +334,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 diff_total = System.currentTimeMillis() - start;
                 diff_delta = diff_total + start - last_start;
 
+                // Compute speed for lines processed since last time
                 speed = ((1 - refresh_beta) * last_speed)
                         + (refresh_beta * ((line_nr - last_line_nr) * 1.f / diff_delta));
 
+                // Compute time left from speed and remaining data
                 time_left = (long) (line_nr / (float) position * (file_size - position) / speed);
 
                 // Values for next iteration
@@ -322,13 +357,17 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                         } // try-catch
                     }
                 };
-
                 SwingUtilities.invokeLater(r);
             } // if
 
             return this;
         }
 
+        /**
+         * Get formattet multiline text for progress GUI.
+         * 
+         * @return String
+         */
         public String getFormatted() {
             return String.format(
                     "Progress: (%.2f %%)\n    In line %d (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
@@ -336,6 +375,12 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     longToTime(time_left));
         }
 
+        /**
+         * Returns true when a new percent is reached. After true is returned
+         * successive calls will return false.
+         * 
+         * @return true for next percent
+         */
         public boolean hasNewPercent() {
             if (has_new_percent) {
                 has_new_percent = false;
@@ -345,10 +390,20 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return false;
         }
 
+        /**
+         * Get percent of progress. (0-100)
+         * 
+         * @return int
+         */
         public int getNewPercent() {
             return last_percent;
         }
 
+        /**
+         * Returns the time spend since start as milli seconds.
+         * 
+         * @return long with milli seconds
+         */
         public long getTotalTime() {
             return System.currentTimeMillis() - start;
         }
@@ -378,6 +433,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
             // Start of code
 
+            // Split line in two urls (pages and link between them)
             int i = line.indexOf('\t');
             if (i == -1) {
                 log.warn("Line {} contains no tab: {}", pgrs.getLineNr(), line);
@@ -387,6 +443,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             String url1 = line.substring(0, i);
             String url2 = line.substring(i + 1);
 
+            // Insert urls
             try {
                 pstmt_insert_url.setString(1, url1);
                 pstmt_insert_url.setString(2, url1);
@@ -403,6 +460,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 log.error("insert url", e);
             } // try-catch
 
+            // Insert link
             try {
                 pstmt_insert_link.setString(1, url1);
                 pstmt_insert_link.setString(2, url2);
@@ -415,6 +473,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         pgrs.finish();
         log.info("Took {} for graph parsing.", longToTime(pgrs.getTotalTime()));
 
+        // Add constraints and indizes
         log.info("Adding unique constraints to db web graph");
         try {
             Statement stmt = conn.createStatement();
@@ -480,7 +539,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             String url = line.substring(0, i);
             String qual = line.substring(i + 1);
 
-            // Only update qualities where 1
+            // Only update qualities where 1 (TRUE), default is 0 (FALSE in DB)
             // Ignore urls which are not in db -> can't be reached from
             // graph
             if ("1".equals(qual)) {
