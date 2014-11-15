@@ -47,8 +47,7 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
 
         @Override
         public String toString() {
-            return String.format("PriorityPage [id=%s, quality=%s, priority=%s, insert=%s]", id, quality, priority,
-                    insert);
+            return String.format("PriorityPage [id=%s, quality=%s, priority=%s, insert=%s]", id, quality, priority, insert);
         }
     }
 
@@ -57,6 +56,11 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
     public PriorityCrawlingQueue(WebGraph wg) {
         webGraph = wg;
         queue = new PriorityQueue<>();
+    }
+    
+    public long getNumberOfElements() {
+    	long size = queue.size();
+    	return size;
     }
 
     @Override
@@ -86,7 +90,7 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
 
     @Override
     public void addPages(List<WebPage> pages, int priority) {
-        int q = 0;
+        //int q = 0;
 
         for (WebPage o : pages) {
             queue.offer(new PriorityPage(o.getID(), 0, priority));
