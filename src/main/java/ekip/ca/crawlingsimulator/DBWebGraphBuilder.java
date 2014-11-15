@@ -415,20 +415,32 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         pgrs.finish();
         log.info("Took {} for graph parsing.", longToTime(pgrs.getTotalTime()));
 
-        log.info("Adding constraints and indizes to db web graph");
-
+        log.info("Adding unique constraints to db web graph");
         try {
             Statement stmt = conn.createStatement();
-
             stmt.executeUpdate("ALTER TABLE pages ADD UNIQUE KEY url_UNIQUE (url)");
-            stmt.executeUpdate("ALTER TABLE relations_url ADD FOREIGN KEY (url1) REFERENCES pages(url)");
-            stmt.executeUpdate("ALTER TABLE relations_url ADD FOREIGN KEY (url2) REFERENCES pages(url)");
-
-            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations_url(url1, url2)");
-
             stmt.close();
         } catch (Exception e) {
-            log.error("sql update", e);
+            log.error("alter table add constraints", e);
+        } // try-catch
+
+        log.info("Adding index to db web graph links");
+        try {
+            Statement stmt = conn.createStatement();
+            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations_url(url1, url2)");
+            stmt.close();
+        } catch (Exception e) {
+            log.error("create index", e);
+        } // try-catch
+
+        log.info("Adding referential constraints to db web graph");
+        try {
+            Statement stmt = conn.createStatement();
+            stmt.executeUpdate("ALTER TABLE relations_url ADD FOREIGN KEY (url1) REFERENCES pages(url)");
+            stmt.executeUpdate("ALTER TABLE relations_url ADD FOREIGN KEY (url2) REFERENCES pages(url)");
+            stmt.close();
+        } catch (Exception e) {
+            log.error("alter table add constraints", e);
         } // try-catch
     }
 
@@ -481,9 +493,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // if
         } // while
 
-        log.info("Took {} for quality update.", longToTime(pgrs.getTotalTime()));
-
         pgrs.finish();
+        log.info("Took {} for quality update.", longToTime(pgrs.getTotalTime()));
     }
 
     /*
