@@ -34,6 +34,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     protected PreparedStatement pstmt_select_linked;
     protected PreparedStatement pstmt_select_all_from_id;
     protected PreparedStatement pstmt_select_all_from_url;
+    protected PreparedStatement pstmt_select_was_page_visited;
+    protected PreparedStatement pstmt_insert_page_visited;
 
     protected List<WebPage> seedPages;
 
@@ -46,37 +48,50 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         Class.forName("org.h2.Driver");
 
         conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath()
-                + ";LOG=0;LOCK_MODE=0;UNDO_LOG=0;AUTOCOMMIT=ON;CACHE_TYPE=SOFT_LRU"
-        /* + ";AUTOCOMMIT=ON;CACHE_SIZE=8192" */, "", "");
+                + ";LOG=0;LOCK_MODE=0;UNDO_LOG=0;AUTOCOMMIT=ON;AUTO_RECONNECT=TRUE;CACHE_TYPE=SOFT_LRU", "", "");
 
-        // TODO: has data
+        log.debug("(Re-) Create queue tables ...");
+        Statement stmt = conn.createStatement();
+        stmt.executeUpdate("DROP TABLE IF EXISTS pages_visited");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages_visited (id BIGINT PRIMARY KEY)");
+        stmt.close();
+
         DatabaseMetaData dbmd = conn.getMetaData();
         ResultSet tables = dbmd.getTables(null, null, "PAGES", new String[] { "TABLE" });
         if (tables.next()) {
-            log.debug("database exists");
+            log.debug("Table for web graph already exists!");
             hasData = true;
         } else {
-            log.debug("database does not exists");
+            log.debug("Tables for web graph do not exist! Will be set up ...");
             hasData = false;
 
-            Statement stmt = conn.createStatement();
+            log.debug("Create page and web graph tables ...");
+            stmt = conn.createStatement();
+            stmt.executeUpdate("DROP INDEX IF EXISTS INDEX_pages_url");
+            stmt.executeUpdate("DROP TABLE IF EXISTS relations");
+            stmt.executeUpdate("DROP TABLE IF EXISTS pages");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL)");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT(40))");
-            stmt.executeUpdate("CREATE INDEX INDEX_pages_url ON pages(url)");
+            stmt.executeUpdate("CREATE INDEX IF NOT EXISTS INDEX_pages_url ON pages(url)");
             stmt.close();
 
+            log.debug("Prepare statements ...");
             pstmt_insert_url = conn
                     .prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
             pstmt_insert_good_url = conn
                     .prepareStatement("INSERT INTO pages (url, quality) SELECT ?, TRUE FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
             pstmt_insert_link = conn
                     .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ?), (SELECT id FROM pages WHERE url = ?))");
+
             pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
-            pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ? LIMIT 1");
-            pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ? LIMIT 1");
-            pstmt_select_all_from_url = conn
-                    .prepareStatement("SELECT id, quality, url FROM pages WHERE url = ? LIMIT 1");
+
+            pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ?");
+            pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ?");
+            pstmt_select_all_from_url = conn.prepareStatement("SELECT TOP 1 id, quality, url FROM pages WHERE url = ?");
             pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
+
+            pstmt_select_was_page_visited = conn.prepareStatement("SELECT TOP 1 * FROM pages_visited WHERE id = ?");
+            pstmt_insert_page_visited = conn.prepareStatement("INSERT INTO pages_visited (id) VALUES (?)");
         } // if-else
 
         // String[] types = { "TABLE", "SYSTEM TABLE" };
@@ -106,6 +121,21 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             @Override
             public void run() {
                 log.debug("Run ShutdownHook: Close DB connection ...");
+                try {
+                    pstmt_insert_url.close();
+                    pstmt_insert_good_url.close();
+                    pstmt_insert_link.close();
+                    pstmt_update_quality.close();
+                    pstmt_select_from_id.close();
+                    pstmt_select_all_from_id.close();
+                    pstmt_select_all_from_url.close();
+                    pstmt_select_linked.close();
+                    pstmt_select_was_page_visited.close();
+                    pstmt_insert_page_visited.close();
+                } catch (Exception e) {
+                    log.error("Closing statements", e);
+                } // try-catch
+
                 try {
                     conn.close();
                 } catch (Exception e) {
@@ -174,6 +204,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
             String url1 = line.substring(0, i);
             String url2 = line.substring(i + 1);
+
+            // TODO: query ids first !!!
 
             try {
                 pstmt_insert_url.setString(1, url1);
@@ -251,9 +283,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             if (rs.next()) {
                 if (rs.getLong(1) > 0) {
                     // has rows -> update
+                    log.debug("Do quality pages update because pages exist already.");
                     doInsert = false;
                 } else {
                     // empty -> insert
+                    log.debug("Do quality pages insert because no pages exist.");
                     doInsert = false;
                 } // if-else
             } // if
@@ -321,10 +355,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
      */
     @Override
     public void loadSeeds(File seed_file) {
-        if (hasData) {
-            return;
-        } // if
-
         try {
             Progress pgrs = new Progress(seed_file, showProgress);
             log.debug("Begin reading seed urls ...");
@@ -470,11 +500,41 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
             @Override
             public void setVisited(boolean visited) {
-                _visited = visited;
+                // Only react to true
+                if (visited) {
+                    // Only update if we need an update ...
+                    if (!_visited) {
+
+                        try {
+                            pstmt_insert_page_visited.setLong(1, _id);
+                            pstmt_insert_page_visited.executeUpdate();
+                        } catch (Exception e) {
+                            log.error("update visited", e);
+                        } // try-catch
+
+                        _visited = true;
+                    } // if
+                } // if
             }
 
             @Override
             public boolean hasBeenVisited() {
+                if (_visited) {
+                    // if visited then exit -> can't unvisit a page ...
+                    return _visited;
+                } // if
+
+                try {
+                    pstmt_select_was_page_visited.setLong(1, _id);
+                    ResultSet rs = pstmt_select_was_page_visited.executeQuery();
+                    if (rs.next()) {
+                        _visited = true;
+                    } // if
+                    rs.close();
+                } catch (Exception e) {
+                    log.error("check visited", e);
+                } // try-catch
+
                 return _visited;
             }
 
@@ -482,7 +542,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             public String getURL() {
                 // Return url if available
                 if (_url != null) {
-                    return null;
+                    return _url;
                 } // if
 
                 // Dynamically load url if neccessary
