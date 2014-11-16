@@ -3,6 +3,8 @@
  */
 package ekip.ca.crawlingsimulator;
 
+import static ekip.ca.crawlingsimulator.Progress.longToTime;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -129,7 +131,7 @@ public class CrawlingSimulator {
         // simulate
         log.info("Start Crawling Simulator ...");
         // not ready for start !
-        //runSimulation(wg);
+        // runSimulation(wg);
         log.info("Stop Crawling Simulator.");
         return this;
     }
@@ -173,73 +175,76 @@ public class CrawlingSimulator {
      */
     public void runSimulation(WebGraph wg) {
         // TODO: simulate
-    	
-    	// Init Ressources
-    	long startTime = System.currentTimeMillis();
-    	long lastStepDuration = 10000;
+
+        // Init Ressources
+        long startTime = System.currentTimeMillis();
+        long lastStepDuration = 10000;
         PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
         // Adding Seeds to Queue with Priority
         pcq.addPages(wg.getSeedWebPages(), 20);
         log.info("Initialize of Ressources done!");
-        
+
         // do crawling
-        for( int i = 0; i < number_of_crawling_steps; i++){
-        	// Init local Ressources
-        	long timeStartLoop = System.currentTimeMillis();
-        	int documents = 0;
-        	int goodDocuments = 0;
-        	float qualityCrawl = 0;
-        	//write status to console
-        	log.info("Actual Crawling Step: {}", i+1);
-        	log.info("Actual Progress: {}", String.format("%.2f %", i/number_of_crawling_steps));
-        	log.info("Duration Last Step: {}", longToTime(lastStepDuration));
-        	log.info("Remaining Time: {}", longToTime((number_of_crawling_steps-i)*lastStepDuration));
-        	log.info("Elapsed Time: {}", longToTime( System.currentTimeMillis() - startTime));
-        	log.info("Elements in Queue: {}", pcq.getNumberOfElements());
-        	//get data from Queue
-        	List<WebPage> pages = pcq.getNextPages(urls_per_step);
-        	for(WebPage page : pages) {
-        		// 1.Step search each Page in quality database
-        		WebPage getQualityPage = wg.fromID(page.getID());
-        		// 2.Step calc quality
-        		int tmp = getQualityPage.getQuality();
-        		documents++;
-        		if (tmp == 1){
-        			goodDocuments++;
-        		}
-        		// 3.Step insert page in visited database
-        		//rufe passende Funktion in WebGraph
-        		// 4.Step insert found links in Queue
-        		List<WebPage> linkedPages = wg.getLinkedWebPages(page);
-        		List<WebPage> linkedPagesPassToQueue = new ArrayList<>();
-        		for(WebPage isInDB : linkedPages){
-        			// make look up if page was already crawled
-        			if(true){
-        				linkedPagesPassToQueue.add(isInDB);
-        			}
-        		}
-        		pcq.addPages(linkedPagesPassToQueue, 10);
-        	}
-        	
-        	if(documents == 0 && pcq.getNumberOfElements() == 0){
-        		i = number_of_crawling_steps;
-        		log.info("Queue ist empty! All remaining Steps will be aborted!");
-        	} else {
-        		qualityCrawl = goodDocuments / documents;
-        		// write file in output path with quality mapping
-        		String filepath = "qualityCrawl-Step-" + String.valueOf((i+1)) + ".txt";
-        		Writer writer = null;
-        		try {
-        		    writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filepath), "utf-8"));
-        		    writer.write(String.valueOf(qualityCrawl));
-        		} catch (IOException ex) {
-        		  log.debug("While try to create quality mapping output file a error occur!", ex);
-        		} finally {
-        		   try {writer.close();} catch (Exception ex) {}
-        		}
-        	}
-        	// calc time for each step
-        	lastStepDuration = System.currentTimeMillis() - timeStartLoop;
+        for (int i = 0; i < number_of_crawling_steps; i++) {
+            // Init local Ressources
+            long timeStartLoop = System.currentTimeMillis();
+            int documents = 0;
+            int goodDocuments = 0;
+            float qualityCrawl = 0;
+            // write status to console
+            log.info("Actual Crawling Step: {}", i + 1);
+            log.info("Actual Progress: {}", String.format("%.2f %", i / number_of_crawling_steps));
+            log.info("Duration Last Step: {}", longToTime(lastStepDuration));
+            log.info("Remaining Time: {}", longToTime((number_of_crawling_steps - i) * lastStepDuration));
+            log.info("Elapsed Time: {}", longToTime(System.currentTimeMillis() - startTime));
+            log.info("Elements in Queue: {}", pcq.getNumberOfElements());
+            // get data from Queue
+            List<WebPage> pages = pcq.getNextPages(urls_per_step);
+            for (WebPage page : pages) {
+                // 1.Step search each Page in quality database
+                // 2.Step calc quality
+                int tmp = page.getQuality();
+                documents++;
+                if (tmp == 1) {
+                    goodDocuments++;
+                }
+                // 3.Step insert page in visited database
+                page.setVisited(true);
+                // rufe passende Funktion in WebGraph
+                // 4.Step insert found links in Queue
+                List<WebPage> linkedPages = wg.getLinkedWebPages(page);
+                List<WebPage> linkedPagesPassToQueue = new ArrayList<>();
+                for (WebPage isInDB : linkedPages) {
+                    // make look up if page was already crawled
+                    if (true) {
+                        linkedPagesPassToQueue.add(isInDB);
+                    }
+                }
+                pcq.addPages(linkedPagesPassToQueue, 10);
+            }
+
+            if (documents == 0 && pcq.getNumberOfElements() == 0) {
+                i = number_of_crawling_steps;
+                log.info("Queue ist empty! All remaining Steps will be aborted!");
+            } else {
+                qualityCrawl = goodDocuments / documents;
+                // write file in output path with quality mapping
+                String filepath = "qualityCrawl-Step-" + String.valueOf((i + 1)) + ".txt";
+                Writer writer = null;
+                try {
+                    writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filepath), "utf-8"));
+                    writer.write(String.valueOf(qualityCrawl));
+                } catch (IOException ex) {
+                    log.debug("While try to create quality mapping output file a error occur!", ex);
+                } finally {
+                    try {
+                        writer.close();
+                    } catch (Exception ex) {
+                    }
+                }
+            }
+            // calc time for each step
+            lastStepDuration = System.currentTimeMillis() - timeStartLoop;
 
         }
         // pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
@@ -247,27 +252,6 @@ public class CrawlingSimulator {
         // Object o = pcq.getNextPage();
         // log.info("o=" + o);
         // } // for
-    }
-    
-    /**
-     * Converts milli seconds from long to time string.
-     * 
-     * @param millis
-     *            long to convert
-     * @return String
-     */
-    protected static String longToTime(long millis) {
-        if (millis < 60000L) {
-            return String.format("%.2f sec", millis / 1000f);
-        } else if (millis < 3600000L) {
-            return String.format("%.2f min", millis / 60000f);
-        } else if (millis < 86400000L) {
-            return String.format("%.2f hrs", millis / 3600000f);
-        } else if (millis < 30758400000L) {
-            return String.format("%.2f days", millis / 86400000f);
-        } else {
-            return millis + " ?";
-        }
     }
 
     /**

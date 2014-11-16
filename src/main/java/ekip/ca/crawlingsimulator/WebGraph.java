@@ -16,6 +16,15 @@ public interface WebGraph {
     public WebPage fromID(long id);
 
     /**
+     * Returns a web page with the given url.
+     * 
+     * @param id
+     *            String with URL
+     * @return web page or null if not found
+     */
+    public WebPage fromURL(String url);
+
+    /**
      * Returns the seed list of web pages for crawling the whole web graph.
      * 
      * @return list of web pages

@@ -36,4 +36,11 @@ public interface CrawlingQueue {
      *            priority for each web page
      */
     public void addPages(List<WebPage> pages, int priority);
+
+    /**
+     * Returns the number of elements in the queue.
+     * 
+     * @return long number of elements in queue
+     */
+    public long getNumberOfElements();
 }

@@ -43,7 +43,7 @@ public class MemoryWebGraphBuilder implements WebGraph, WebGraphBuilder {
             private String _url = url;
             private boolean _visited = false;
             private int _quality = 0;
-            
+
             @Override
             public long getID() {
                 // TODO:
@@ -181,6 +181,12 @@ public class MemoryWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
     @Override
     public WebPage fromID(long id) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public WebPage fromURL(String url) {
         // TODO Auto-generated method stub
         return null;
     }

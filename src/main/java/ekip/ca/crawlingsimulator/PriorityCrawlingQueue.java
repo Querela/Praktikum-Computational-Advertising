@@ -27,15 +27,15 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
 
             i = (this.priority - arg0.priority);
 
-            i = (this.quality - arg0.quality);
-            // if (i == 0) {
-            // i = (this.quality < arg0.quality) ? -1 : 1;
-            // } // if
-
             if (i == 0) {
-                i = (int) (this.insert - arg0.insert);
+                i = (this.quality - arg0.quality);
+
+                if (i == 0) {
+                    i = (int) (this.insert - arg0.insert);
+                } // if
             } // if
 
+            // Normalize equality
             i = (i < 0) ? -1 : (i > 0) ? 1 : 0;
 
             return i;
@@ -47,7 +47,8 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
 
         @Override
         public String toString() {
-            return String.format("PriorityPage [id=%s, quality=%s, priority=%s, insert=%s]", id, quality, priority, insert);
+            return String.format("PriorityPage [id=%s, quality=%s, priority=%s, insert=%s]", id, quality, priority,
+                    insert);
         }
     }
 
@@ -57,10 +58,11 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
         webGraph = wg;
         queue = new PriorityQueue<>();
     }
-    
+
+    @Override
     public long getNumberOfElements() {
-    	long size = queue.size();
-    	return size;
+        long size = queue.size();
+        return size;
     }
 
     @Override
@@ -68,9 +70,9 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
         List<WebPage> l = new ArrayList<>();
 
         for (int i = 0; i < count && !queue.isEmpty(); i++) {
-            WebPage o = getNextPage();
-            if (o != null) {
-                l.add(o);
+            WebPage page = getNextPage();
+            if (page != null) {
+                l.add(page);
                 break;
             } // if
         }
@@ -90,10 +92,8 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
 
     @Override
     public void addPages(List<WebPage> pages, int priority) {
-        //int q = 0;
-
-        for (WebPage o : pages) {
-            queue.offer(new PriorityPage(o.getID(), 0, priority));
+        for (WebPage page : pages) {
+            queue.offer(new PriorityPage(page.getID(), page.getQuality(), priority));
         } // for
     }
 

@@ -1,39 +1,28 @@
 package ekip.ca.crawlingsimulator;
 
+import static ekip.ca.crawlingsimulator.Progress.longToSize;
+import static ekip.ca.crawlingsimulator.Progress.longToTime;
+
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.channels.FileChannel;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.swing.JLabel;
-import javax.swing.JTextArea;
-import javax.swing.ProgressMonitorInputStream;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
-    private final static Logger log = LoggerFactory.getLogger(DBWebGraphBuilder.class);
+    final static Logger log = LoggerFactory.getLogger(DBWebGraphBuilder.class);
 
-    protected final static long refresh_line_count = 5000L;
-    protected final static float refresh_beta = 0.03f;
     protected final static long gc_line_count = 100000L;
 
     protected boolean showProgress = false;
@@ -48,8 +37,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     protected PreparedStatement pstmt_select_all_from_id;
     protected PreparedStatement pstmt_select_all_from_url;
 
+    protected List<WebPage> seedPages;
+
     public DBWebGraphBuilder(boolean show_progress) {
         this.showProgress = show_progress;
+        this.seedPages = new ArrayList<>();
     }
 
     public void connectToDB(File databaseFile) throws Exception {
@@ -67,11 +59,13 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             hasData = true;
         } else {
             log.debug("database does not exists");
-            Statement stmt = conn.createStatement();
+            hasData = false;
 
+            Statement stmt = conn.createStatement();
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL)");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT(40))");
             stmt.executeUpdate("CREATE INDEX INDEX_pages_url ON pages(url)");
+            stmt.close();
 
             pstmt_insert_url = conn
                     .prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
@@ -85,10 +79,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             pstmt_select_all_from_url = conn
                     .prepareStatement("SELECT id, quality, url FROM pages WHERE url = ? LIMIT 1");
             pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
-
-            hasData = false;
-
-            stmt.close();
         } // if-else
 
         // String[] types = { "TABLE", "SYSTEM TABLE" };
@@ -127,50 +117,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         });
     }
 
-    protected final static NumberFormat nf = new DecimalFormat("0.###");
-
-    /**
-     * Converts a long to human file size.
-     * 
-     * @param size
-     *            long to convert
-     * @return String
-     */
-    protected static String longToSize(long size) {
-        if (size < 1024L) {
-            return nf.format(size) + " Byte";
-        } else if (size < 1048576L) {
-            return nf.format(size / 1024f) + " KB";
-        } else if (size < 1073741824L) {
-            return nf.format(size / 1048576f) + " MB";
-        } else if (size < 1099511627776L) {
-            return nf.format(size / 1073741824f) + " GB";
-        } else {
-            return size + " ?";
-        } // if-else*if-else
-    }
-
-    /**
-     * Converts milli seconds from long to time string.
-     * 
-     * @param millis
-     *            long to convert
-     * @return String
-     */
-    protected static String longToTime(long millis) {
-        if (millis < 60000L) {
-            return String.format("%.2f sec", millis / 1000f);
-        } else if (millis < 3600000L) {
-            return String.format("%.2f min", millis / 60000f);
-        } else if (millis < 86400000L) {
-            return String.format("%.2f hrs", millis / 3600000f);
-        } else if (millis < 30758400000L) {
-            return String.format("%.2f days", millis / 86400000f);
-        } else {
-            return millis + " ?";
-        }
-    }
-
     protected static String formatProgressMessage(long curLine, long curPos, long length, long start) {
         // > time spend (milli seconds)
         long diff = System.currentTimeMillis() - start;
@@ -196,165 +142,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 "Progress: (%.2f %%)\n    In line %s (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)", curPos
                         * 100f / length, curLine, speed, longToSize(curPos), longToSize(length), longToTime(diff),
                 longToTime(timeLeft));
-    }
-
-    protected static class Progress {
-        private final long start;
-        public long last_start;
-        private long line_nr;
-        private long last_line_nr = line_nr;
-        private float speed = 0.f;
-        private float last_speed = speed;
-        private long diff_total;
-        private long diff_delta;
-        private long time_left;
-        private final FileChannel fc;
-        private long position;
-        private final long file_size;
-        private final String file_size_s;
-        private float percent;
-
-        private boolean has_new_percent;
-        private int last_percent;
-
-        private boolean show_progress;
-        private BufferedReader br = null;
-        private JTextArea progress_label;
-
-        public Progress(final File file, boolean show_progress) {
-            this.line_nr = 0;
-
-            this.show_progress = show_progress;
-            this.start = System.currentTimeMillis();
-
-            this.file_size = file.length();
-            this.file_size_s = longToSize(file_size);
-
-            FileInputStream fis = null;
-            try {
-                fis = new FileInputStream(file);
-            } catch (FileNotFoundException e) {
-                log.error("open file", e);
-            } // try-catch
-            this.fc = fis.getChannel();
-
-            if (show_progress) {
-                progress_label = new JTextArea("Progress: ");
-                JLabel filename_label = new JLabel(file.getAbsolutePath(), SwingConstants.RIGHT);
-                progress_label.setBackground(filename_label.getBackground());
-                progress_label.setEditable(false);
-                progress_label.setFont(filename_label.getFont());
-                Object[] oos = new Object[] { "Reading & Parsing file ...", filename_label, progress_label };
-
-                br = new BufferedReader(new InputStreamReader(new ProgressMonitorInputStream(null, oos, fis)));
-            } else {
-                br = new BufferedReader(new InputStreamReader(fis));
-            } // if-else
-
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    log.debug("Run ShutdownHook: Close file {} ...", file.getName());
-                    finish();
-                }
-            });
-        }
-
-        public void finish() {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException e) {
-                    log.error("Close file");
-                } // try-catch
-            } // if
-        }
-
-        public String nextLine() {
-            try {
-                String line = br.readLine();
-                line_nr++;
-                return line;
-            } catch (IOException e) {
-                log.error("read line", e);
-                return null;
-            } // try-catch
-        }
-
-        public long getLineNr() {
-            return line_nr;
-        }
-
-        public Progress update() {
-            try {
-                position = fc.position();
-            } catch (IOException e) {
-            } // try-catch
-
-            // Check if new percent
-            float temp_percent = position * 100.f / file_size;
-            if ((((int) temp_percent) - last_percent) > 0) {
-                has_new_percent = true;
-                last_percent = (int) temp_percent;
-            } // if
-            percent = temp_percent;
-
-            // Update progress
-            if (show_progress && (line_nr % refresh_line_count == 0)) {
-                diff_total = System.currentTimeMillis() - start;
-                diff_delta = diff_total + start - last_start;
-
-                speed = ((1 - refresh_beta) * last_speed)
-                        + (refresh_beta * ((line_nr - last_line_nr) * 1.f / diff_delta));
-
-                time_left = (long) (line_nr / (float) position * (file_size - position) / speed);
-
-                // Values for next iteration
-                last_line_nr = line_nr;
-                last_start = diff_delta + last_start;
-                last_speed = speed;
-
-                // Present values
-                Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            progress_label.setText(getFormatted());
-                        } catch (Exception e) {
-                            progress_label.setText(e.getLocalizedMessage());
-                        } // try-catch
-                    }
-                };
-
-                SwingUtilities.invokeLater(r);
-            } // if
-
-            return this;
-        }
-
-        public String getFormatted() {
-            return String.format(
-                    "Progress: (%.2f %%)\n    In line %d (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)",
-                    percent, line_nr, speed, longToSize(position), file_size_s, longToTime(diff_total),
-                    longToTime(time_left));
-        }
-
-        public boolean hasNewPercent() {
-            if (has_new_percent) {
-                has_new_percent = false;
-                return true;
-            } // if
-
-            return false;
-        }
-
-        public int getNewPercent() {
-            return last_percent;
-        }
-
-        public long getTotalTime() {
-            return System.currentTimeMillis() - start;
-        }
     }
 
     /*
@@ -459,6 +246,24 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return;
         } // if
 
+        // Check whether to simply insert or update the rows
+        boolean doInsert = false;
+        try {
+            ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM pages");
+            if (rs.next()) {
+                if (rs.getLong(1) > 0) {
+                    // has rows -> update
+                    doInsert = false;
+                } else {
+                    // empty -> insert
+                    doInsert = false;
+                } // if-else
+            } // if
+            rs.close();
+        } catch (SQLException e) {
+            log.error("sql", e);
+        } // try-catch
+
         final Progress pgrs = new Progress(quality_file, showProgress);
 
         log.debug("Begin reading quality mapping ...");
@@ -483,17 +288,26 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             String url = line.substring(0, i);
             String qual = line.substring(i + 1);
 
-            // Only update qualities where 1
+            // Only insert/update qualities where 1
             // Ignore urls which are not in db -> can't be reached from
             // graph
             if ("1".equals(qual)) {
-                try {
-                    pstmt_insert_good_url.setString(1, url);
-                    pstmt_insert_good_url.setString(2, url);
-                    pstmt_update_quality.executeUpdate();
-                } catch (Exception e) {
-                    log.error(e.getLocalizedMessage());
-                } // try-catch
+                if (doInsert) {
+                    try {
+                        pstmt_insert_good_url.setString(1, url);
+                        pstmt_insert_good_url.setString(2, url);
+                        pstmt_update_quality.executeUpdate();
+                    } catch (Exception e) {
+                        log.error(e.getLocalizedMessage());
+                    } // try-catch
+                } else {
+                    try {
+                        pstmt_update_quality.setString(1, url);
+                        pstmt_update_quality.executeUpdate();
+                    } catch (Exception e) {
+                        log.error(e.getLocalizedMessage());
+                    } // try-catch
+                } // if-else
             } // if
         } // while
 
@@ -549,7 +363,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
      */
     @Override
     public List<WebPage> getSeedWebPages() {
-        return Collections.emptyList();
+        return Collections.unmodifiableList(seedPages);
     }
 
     /*
@@ -596,11 +410,21 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         throw new RuntimeException("setAutoVisitedOnRetrieval not yet implemented!");
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ekip.ca.crawlingsimulator.WebGraph#fromURL(java.lang.String)
+     */
+    @Override
     public WebPage fromURL(final String url) {
+        if (url == null) {
+            return null;
+        } // if
+        
         // Try to get quality of abort on error
         try {
             pstmt_select_all_from_url.setString(1, url);
-            ResultSet rs = pstmt_select_from_id.executeQuery();
+            ResultSet rs = pstmt_select_all_from_url.executeQuery();
             long id = rs.getLong(1);
             rs.close();
 
