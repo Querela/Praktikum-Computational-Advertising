@@ -3,9 +3,7 @@ package ekip.ca.crawlingsimulator;
 import static ekip.ca.crawlingsimulator.Progress.longToSize;
 import static ekip.ca.crawlingsimulator.Progress.longToTime;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -328,19 +326,19 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // if
 
         try {
-            final long start = System.currentTimeMillis();
-            BufferedReader br = new BufferedReader(new FileReader(seed_file));
-
+            Progress pgrs = new Progress(seed_file, showProgress);
             log.debug("Begin reading seed urls ...");
-            String line = null;
-            while ((line = br.readLine()) != null) {
 
-                log.debug("Seed: {}", line);
-                // TODO: create web pages / retrieve ids
+            String line = null;
+            while ((line = pgrs.nextLine()) != null) {
+                WebPage wp = fromURL(line);
+                if (wp != null) {
+                    seedPages.add(wp);
+                } // if
             } // while
 
-            log.info("Took {} for reading seeds.", longToTime(System.currentTimeMillis() - start));
-            br.close();
+            pgrs.finish();
+            log.info("Took {} for reading {} seeds.", longToTime(pgrs.getTotalTime()), seedPages.size());
         } catch (Exception e) {
             log.error("read seed file fail", e);
         } // try-catch
@@ -420,15 +418,16 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         if (url == null) {
             return null;
         } // if
-        
+
         // Try to get quality of abort on error
         try {
             pstmt_select_all_from_url.setString(1, url);
             ResultSet rs = pstmt_select_all_from_url.executeQuery();
             long id = rs.getLong(1);
+            int qual = (rs.getBoolean(2)) ? 1 : 0;
             rs.close();
 
-            return fromID(id);
+            return newWebPage(id, qual, url);
         } catch (Exception e) {
             log.error("retieve page", e);
             return null;
@@ -458,13 +457,16 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return null;
         } // try-catch
 
+        return newWebPage(id, qual, null);
+    }
+
+    protected WebPage newWebPage(final long id, final int qual, final String url) {
         // create new web page
-        final int myQual = qual;
         return new WebPage() {
             private long _id = id;
             private boolean _visited = false;
-            private String _url = null;
-            private int _quality = myQual;
+            private String _url = url;
+            private int _quality = qual;
 
             @Override
             public void setVisited(boolean visited) {

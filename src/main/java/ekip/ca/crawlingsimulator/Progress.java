@@ -19,8 +19,6 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.beust.jcommander.Parameter;
-
 /**
  * Class to monitor progress when reading lines from a large file. Can
  * automatically update a GUI.
@@ -28,7 +26,6 @@ import com.beust.jcommander.Parameter;
 public class Progress {
     private final static Logger log = LoggerFactory.getLogger(Progress.class);
 
-    @Parameter(names = { "-i", "--show-progress" }, description = "Show progress while reading files etc.")
     protected boolean show_progress = false;
 
     protected final static long refresh_line_count = 5000L;
