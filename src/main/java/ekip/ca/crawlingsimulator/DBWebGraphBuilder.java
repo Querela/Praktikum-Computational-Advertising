@@ -33,6 +33,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     protected PreparedStatement pstmt_select_from_id;
     protected PreparedStatement pstmt_select_linked;
     protected PreparedStatement pstmt_select_all_from_id;
+    protected PreparedStatement pstmt_select_id_from_url;
     protected PreparedStatement pstmt_select_all_from_url;
     protected PreparedStatement pstmt_select_was_page_visited;
     protected PreparedStatement pstmt_insert_page_visited;
@@ -76,17 +77,17 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             stmt.close();
 
             log.debug("Prepare statements ...");
-            pstmt_insert_url = conn
-                    .prepareStatement("INSERT INTO pages (url) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
+            pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)",
+                    Statement.RETURN_GENERATED_KEYS);
             pstmt_insert_good_url = conn
                     .prepareStatement("INSERT INTO pages (url, quality) SELECT ?, TRUE FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
-            pstmt_insert_link = conn
-                    .prepareStatement("INSERT INTO relations (id1, id2) VALUES ((SELECT id FROM pages WHERE url = ?), (SELECT id FROM pages WHERE url = ?))");
+            pstmt_insert_link = conn.prepareStatement("INSERT INTO relations (id1, id2) VALUES (?, ?)");
 
             pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
 
             pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ?");
             pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ?");
+            pstmt_select_id_from_url = conn.prepareStatement("SELECT TOP 1 id FROM pages WHERE url = ?");
             pstmt_select_all_from_url = conn.prepareStatement("SELECT TOP 1 id, quality, url FROM pages WHERE url = ?");
             pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
 
@@ -128,6 +129,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     pstmt_update_quality.close();
                     pstmt_select_from_id.close();
                     pstmt_select_all_from_id.close();
+                    pstmt_select_id_from_url.close();
                     pstmt_select_all_from_url.close();
                     pstmt_select_linked.close();
                     pstmt_select_was_page_visited.close();
@@ -207,25 +209,12 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
             // TODO: query ids first !!!
 
-            try {
-                pstmt_insert_url.setString(1, url1);
-                pstmt_insert_url.setString(2, url1);
-                pstmt_insert_url.executeUpdate();
-            } catch (Exception e) {
-                log.error("insert url", e);
-            } // try-catch
+            long id1 = addNewPageToDB(url1);
+            long id2 = addNewPageToDB(url2);
 
             try {
-                pstmt_insert_url.setString(1, url2);
-                pstmt_insert_url.setString(2, url2);
-                pstmt_insert_url.executeUpdate();
-            } catch (Exception e) {
-                log.error("insert url", e);
-            } // try-catch
-
-            try {
-                pstmt_insert_link.setString(1, url1);
-                pstmt_insert_link.setString(2, url2);
+                pstmt_insert_link.setLong(1, id1);
+                pstmt_insert_link.setLong(2, id2);
                 pstmt_insert_link.executeUpdate();
             } catch (Exception e) {
                 log.error(e.getLocalizedMessage());
@@ -247,7 +236,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         log.info("Adding indix to db web graph");
         try {
             Statement stmt = conn.createStatement();
-            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations_url(id1, id2)");
+            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations(id1, id2)");
             stmt.close();
         } catch (Exception e) {
             log.error("sql update: index relations", e);
@@ -262,6 +251,46 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } catch (Exception e) {
             log.error("sql update: references", e);
         } // try-catch
+    }
+
+    /**
+     * Adds a new row (page: id, qual, url) to db and/or returns the id of the
+     * existing row.
+     * 
+     * @param url
+     *            page to check or add
+     * @return id (long) of url (page)
+     */
+    protected long addNewPageToDB(String url) {
+        long id = -1;
+
+        try {
+            pstmt_select_id_from_url.setString(1, url);
+            ResultSet rs = pstmt_select_id_from_url.executeQuery();
+            if (rs.next()) {
+                id = rs.getLong(1);
+            } // if
+            rs.close();
+        } catch (SQLException e) {
+            log.error("get id for url", e);
+        } // try-catch
+
+        if (id == -1) {
+            // Insert new row if no valid id
+            try {
+                pstmt_insert_url.setString(1, url);
+                pstmt_insert_url.executeUpdate();
+                ResultSet rs = pstmt_insert_url.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getLong(1);
+                } // if
+                rs.close();
+            } catch (Exception e) {
+                log.error("insert url", e);
+            } // try-catch
+        } // if
+
+        return id;
     }
 
     /*
@@ -490,6 +519,17 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         return newWebPage(id, qual, null);
     }
 
+    /**
+     * Wrapper to create a new WebPage object.
+     * 
+     * @param id
+     *            long with db id
+     * @param qual
+     *            quality (0, 1)
+     * @param url
+     *            String with url
+     * @return WebPage
+     */
     protected WebPage newWebPage(final long id, final int qual, final String url) {
         // create new web page
         return new WebPage() {
