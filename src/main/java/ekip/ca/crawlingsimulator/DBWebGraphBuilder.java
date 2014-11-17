@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     final static Logger log = LoggerFactory.getLogger(DBWebGraphBuilder.class);
+    final static Logger logSQL = LoggerFactory.getLogger("SQL");
 
     protected final static long gc_line_count = 100000L;
 
@@ -54,7 +55,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         log.debug("(Re-) Create queue tables ...");
         Statement stmt = conn.createStatement();
         stmt.executeUpdate("DROP TABLE IF EXISTS pages_visited");
-        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages_visited (id BIGINT PRIMARY KEY)");
+        stmt.executeUpdate("CREATE TABLE pages_visited (id BIGINT PRIMARY KEY)");
         stmt.close();
 
         DatabaseMetaData dbmd = conn.getMetaData();
@@ -68,12 +69,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
             log.debug("Create page and web graph tables ...");
             stmt = conn.createStatement();
-            stmt.executeUpdate("DROP INDEX IF EXISTS INDEX_pages_url");
-            stmt.executeUpdate("DROP TABLE IF EXISTS relations");
-            stmt.executeUpdate("DROP TABLE IF EXISTS pages");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL)");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL, UNIQUE KEY url_UNIQUE (url))");
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT(40))");
-            stmt.executeUpdate("CREATE INDEX IF NOT EXISTS INDEX_pages_url ON pages(url)");
+            // stmt.executeUpdate("CREATE UNIQUE HASH INDEX IF NOT EXISTS INDEX_pages_url ON pages(url)");
+            stmt.executeUpdate("CREATE INDEX IF NOT EXISTS INDEX_relations ON relations(id1)");
             stmt.close();
 
             log.debug("Prepare statements ...");
@@ -86,9 +85,9 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
 
             pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ?");
-            pstmt_select_all_from_id = conn.prepareStatement("SELECT id, quality, url FROM pages WHERE id = ?");
+            pstmt_select_all_from_id = conn.prepareStatement("SELECT quality, url FROM pages WHERE id = ?");
             pstmt_select_id_from_url = conn.prepareStatement("SELECT TOP 1 id FROM pages WHERE url = ?");
-            pstmt_select_all_from_url = conn.prepareStatement("SELECT TOP 1 id, quality, url FROM pages WHERE url = ?");
+            pstmt_select_all_from_url = conn.prepareStatement("SELECT TOP 1 id, quality FROM pages WHERE url = ?");
             pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
 
             pstmt_select_was_page_visited = conn.prepareStatement("SELECT TOP 1 * FROM pages_visited WHERE id = ?");
@@ -207,14 +206,13 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             String url1 = line.substring(0, i);
             String url2 = line.substring(i + 1);
 
-            // TODO: query ids first !!!
-
             long id1 = addNewPageToDB(url1);
             long id2 = addNewPageToDB(url2);
 
             try {
                 pstmt_insert_link.setLong(1, id1);
                 pstmt_insert_link.setLong(2, id2);
+                logSQL.debug("{}", pstmt_insert_link);
                 pstmt_insert_link.executeUpdate();
             } catch (Exception e) {
                 log.error(e.getLocalizedMessage());
@@ -224,33 +222,15 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         pgrs.finish();
         log.info("Took {} for graph parsing.", longToTime(pgrs.getTotalTime()));
 
-        log.info("Adding unique constraints to db web graph");
-        try {
-            Statement stmt = conn.createStatement();
-            stmt.executeUpdate("ALTER TABLE pages ADD UNIQUE KEY url_UNIQUE (url)");
-            stmt.close();
-        } catch (Exception e) {
-            log.error("sql update: unique", e);
-        } // try-catch
-
-        log.info("Adding indix to db web graph");
-        try {
-            Statement stmt = conn.createStatement();
-            stmt.executeUpdate("CREATE INDEX INDEX_relations_url ON relations(id1, id2)");
-            stmt.close();
-        } catch (Exception e) {
-            log.error("sql update: index relations", e);
-        } // try-catch
-
-        log.info("Adding referential constraints to db web graph");
-        try {
-            Statement stmt = conn.createStatement();
-            stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id1) REFERENCES pages(id)");
-            stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id2) REFERENCES pages(id)");
-            stmt.close();
-        } catch (Exception e) {
-            log.error("sql update: references", e);
-        } // try-catch
+        // log.info("Adding referential constraints to db web graph");
+        // try {
+        // Statement stmt = conn.createStatement();
+        // stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id1) REFERENCES pages(id)");
+        // stmt.executeUpdate("ALTER TABLE relations ADD FOREIGN KEY (id2) REFERENCES pages(id)");
+        // stmt.close();
+        // } catch (Exception e) {
+        // log.error("sql update: references", e);
+        // } // try-catch
     }
 
     /**
@@ -266,6 +246,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
         try {
             pstmt_select_id_from_url.setString(1, url);
+            logSQL.debug("{}", pstmt_select_id_from_url);
             ResultSet rs = pstmt_select_id_from_url.executeQuery();
             if (rs.next()) {
                 id = rs.getLong(1);
@@ -279,6 +260,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             // Insert new row if no valid id
             try {
                 pstmt_insert_url.setString(1, url);
+                logSQL.debug("{}", pstmt_insert_url);
                 pstmt_insert_url.executeUpdate();
                 ResultSet rs = pstmt_insert_url.getGeneratedKeys();
                 if (rs.next()) {
@@ -317,7 +299,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 } else {
                     // empty -> insert
                     log.debug("Do quality pages insert because no pages exist.");
-                    doInsert = false;
+                    doInsert = true;
                 } // if-else
             } // if
             rs.close();
@@ -357,13 +339,15 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     try {
                         pstmt_insert_good_url.setString(1, url);
                         pstmt_insert_good_url.setString(2, url);
-                        pstmt_update_quality.executeUpdate();
+                        logSQL.debug("{}", pstmt_insert_good_url);
+                        pstmt_insert_good_url.executeUpdate();
                     } catch (Exception e) {
                         log.error(e.getLocalizedMessage());
                     } // try-catch
                 } else {
                     try {
                         pstmt_update_quality.setString(1, url);
+                        logSQL.debug("{}", pstmt_update_quality);
                         pstmt_update_quality.executeUpdate();
                     } catch (Exception e) {
                         log.error(e.getLocalizedMessage());
@@ -397,7 +381,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // while
 
             pgrs.finish();
-            log.info("Took {} for reading {} seeds.", longToTime(pgrs.getTotalTime()), seedPages.size());
+            log.info("Took {} for reading {}/{} seeds.", longToTime(pgrs.getTotalTime()), seedPages.size(),
+                    pgrs.getLineNr());
         } catch (Exception e) {
             log.error("read seed file fail", e);
         } // try-catch
@@ -481,16 +466,24 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         // Try to get quality of abort on error
         try {
             pstmt_select_all_from_url.setString(1, url);
+            logSQL.debug("{}", pstmt_select_all_from_url);
             ResultSet rs = pstmt_select_all_from_url.executeQuery();
-            long id = rs.getLong(1);
-            int qual = (rs.getBoolean(2)) ? 1 : 0;
+            long id = -1;
+            int qual = 0;
+            if (rs.next()) {
+                id = rs.getLong(1);
+                qual = (rs.getBoolean(2)) ? 1 : 0;
+            } // if
             rs.close();
 
-            return newWebPage(id, qual, url);
+            if (id != -1) {
+                return newWebPage(id, qual, url);
+            } // if
         } catch (Exception e) {
             log.error("retieve page", e);
-            return null;
         } // try-catch
+
+        return null;
     }
 
     /*
@@ -505,11 +498,13 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         // Try to get quality of abort on error
         try {
             pstmt_select_from_id.setLong(1, id);
+            logSQL.debug("{}", pstmt_select_from_id);
             ResultSet rs = pstmt_select_from_id.executeQuery();
 
-            if (rs.getBoolean(1)) {
+            if (rs.next() && rs.getBoolean(1)) {
                 qual = 1;
             } // if
+
             rs.close();
         } catch (Exception e) {
             log.error("retieve page", e);
@@ -547,9 +542,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
                         try {
                             pstmt_insert_page_visited.setLong(1, _id);
+                            logSQL.debug("{}", pstmt_insert_page_visited);
                             pstmt_insert_page_visited.executeUpdate();
                         } catch (Exception e) {
-                            log.error("update visited", e);
+                            log.error(e.getLocalizedMessage());
                         } // try-catch
 
                         _visited = true;
@@ -566,6 +562,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
                 try {
                     pstmt_select_was_page_visited.setLong(1, _id);
+                    logSQL.debug("{}", pstmt_select_was_page_visited);
                     ResultSet rs = pstmt_select_was_page_visited.executeQuery();
                     if (rs.next()) {
                         _visited = true;
@@ -588,9 +585,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 // Dynamically load url if neccessary
                 try {
                     pstmt_select_all_from_id.setLong(1, _id);
+                    logSQL.debug("{}", pstmt_select_all_from_id);
                     ResultSet rs = pstmt_select_all_from_id.executeQuery();
                     if (rs.next()) {
-                        _url = rs.getString(3);
+                        _url = rs.getString(2);
                     } // if
                     rs.close();
                 } catch (Exception e) {

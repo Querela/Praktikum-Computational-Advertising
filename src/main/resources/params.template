@@ -12,4 +12,5 @@ out.txt
 200
 --database-file
 database.db
+--show-progress
 --help

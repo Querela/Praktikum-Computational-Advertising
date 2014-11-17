@@ -75,6 +75,39 @@ public class Progress {
         }
     }
 
+    /**
+     * Converts milli seconds from long to extended time string.
+     * 
+     * @param millis
+     *            long to convert
+     * @return String
+     */
+    public static String longToTimeEx(long millis) {
+        StringBuilder sb = new StringBuilder();
+
+        if (millis > 86400000L) {
+            sb.append(millis / 86400000L).append(" days ");
+            millis = millis % 86400000L;
+        } // if
+        if (millis > 3600000L) {
+            sb.append(millis / 3600000L).append(" hrs ");
+            millis = millis % 3600000L;
+        } // if
+        if (millis > 60000L) {
+            sb.append(millis / 60000L).append(" min ");
+            millis = millis % 60000L;
+        } // if
+        if (millis > 1000L) {
+            sb.append(millis / 1000L).append(" sec ");
+            millis = millis % 1000L;
+        } // if
+        if (millis > 0L) {
+            sb.append(millis).append(" msec ");
+        } // if
+
+        return sb.deleteCharAt(sb.lastIndexOf(" ")).toString();
+    }
+
     private final long start;
     public long last_start;
     private long line_nr;
@@ -208,6 +241,8 @@ public class Progress {
             diff_total = System.currentTimeMillis() - start;
             diff_delta = diff_total + start - last_start;
 
+            // TODO: compute next refresh_line_count
+
             // Compute speed for lines processed since last time
             speed = ((1 - refresh_beta) * last_speed) + (refresh_beta * ((line_nr - last_line_nr) * 1.f / diff_delta));
 
@@ -243,8 +278,9 @@ public class Progress {
      */
     public String getFormatted() {
         return String.format(
-                "Progress: (%.2f %%)\n    In line %d (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)", percent,
-                line_nr, speed, longToSize(position), file_size_s, longToTime(diff_total), longToTime(time_left));
+                "Progress: (%.2f %%)\n    In line %d (speed: %.2f %sL/s)\n    %s / %s\n    >>> %s (left: %s)", percent,
+                line_nr, (speed > 1.f) ? speed : speed * 1000, (speed > 1.f) ? "k" : "", longToSize(position),
+                file_size_s, longToTime(diff_total), longToTime(time_left));
     }
 
     /**
