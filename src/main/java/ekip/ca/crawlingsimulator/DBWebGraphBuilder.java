@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     final static Logger log = LoggerFactory.getLogger(DBWebGraphBuilder.class);
-    final static Logger logSQL = LoggerFactory.getLogger("SQL");
+    // final static Logger logSQL = LoggerFactory.getLogger("SQL");
 
     protected final static long gc_line_count = 100000L;
 
@@ -212,7 +212,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             try {
                 pstmt_insert_link.setLong(1, id1);
                 pstmt_insert_link.setLong(2, id2);
-                logSQL.debug("{}", pstmt_insert_link);
+                // logSQL.debug("{}", pstmt_insert_link);
                 pstmt_insert_link.executeUpdate();
             } catch (Exception e) {
                 log.error(e.getLocalizedMessage());
@@ -246,7 +246,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
         try {
             pstmt_select_id_from_url.setString(1, url);
-            logSQL.debug("{}", pstmt_select_id_from_url);
+            // logSQL.debug("{}", pstmt_select_id_from_url);
             ResultSet rs = pstmt_select_id_from_url.executeQuery();
             if (rs.next()) {
                 id = rs.getLong(1);
@@ -260,7 +260,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             // Insert new row if no valid id
             try {
                 pstmt_insert_url.setString(1, url);
-                logSQL.debug("{}", pstmt_insert_url);
+                // logSQL.debug("{}", pstmt_insert_url);
                 pstmt_insert_url.executeUpdate();
                 ResultSet rs = pstmt_insert_url.getGeneratedKeys();
                 if (rs.next()) {
@@ -339,7 +339,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     try {
                         pstmt_insert_good_url.setString(1, url);
                         pstmt_insert_good_url.setString(2, url);
-                        logSQL.debug("{}", pstmt_insert_good_url);
+                        // logSQL.debug("{}", pstmt_insert_good_url);
                         pstmt_insert_good_url.executeUpdate();
                     } catch (Exception e) {
                         log.error(e.getLocalizedMessage());
@@ -347,7 +347,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 } else {
                     try {
                         pstmt_update_quality.setString(1, url);
-                        logSQL.debug("{}", pstmt_update_quality);
+                        // logSQL.debug("{}", pstmt_update_quality);
                         pstmt_update_quality.executeUpdate();
                     } catch (Exception e) {
                         log.error(e.getLocalizedMessage());
@@ -466,7 +466,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         // Try to get quality of abort on error
         try {
             pstmt_select_all_from_url.setString(1, url);
-            logSQL.debug("{}", pstmt_select_all_from_url);
+            // logSQL.debug("{}", pstmt_select_all_from_url);
             ResultSet rs = pstmt_select_all_from_url.executeQuery();
             long id = -1;
             int qual = 0;
@@ -498,7 +498,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         // Try to get quality of abort on error
         try {
             pstmt_select_from_id.setLong(1, id);
-            logSQL.debug("{}", pstmt_select_from_id);
+            // logSQL.debug("{}", pstmt_select_from_id);
             ResultSet rs = pstmt_select_from_id.executeQuery();
 
             if (rs.next() && rs.getBoolean(1)) {
@@ -542,7 +542,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
                         try {
                             pstmt_insert_page_visited.setLong(1, _id);
-                            logSQL.debug("{}", pstmt_insert_page_visited);
+                            // logSQL.debug("{}", pstmt_insert_page_visited);
                             pstmt_insert_page_visited.executeUpdate();
                         } catch (Exception e) {
                             log.error(e.getLocalizedMessage());
@@ -562,7 +562,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
                 try {
                     pstmt_select_was_page_visited.setLong(1, _id);
-                    logSQL.debug("{}", pstmt_select_was_page_visited);
+                    // logSQL.debug("{}", pstmt_select_was_page_visited);
                     ResultSet rs = pstmt_select_was_page_visited.executeQuery();
                     if (rs.next()) {
                         _visited = true;
@@ -585,7 +585,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 // Dynamically load url if neccessary
                 try {
                     pstmt_select_all_from_id.setLong(1, _id);
-                    logSQL.debug("{}", pstmt_select_all_from_id);
+                    // logSQL.debug("{}", pstmt_select_all_from_id);
                     ResultSet rs = pstmt_select_all_from_id.executeQuery();
                     if (rs.next()) {
                         _url = rs.getString(2);
