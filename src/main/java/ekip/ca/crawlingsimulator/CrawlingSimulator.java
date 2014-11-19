@@ -72,6 +72,9 @@ public class CrawlingSimulator {
     @Parameter(names = { "-d", "--database-file" }, converter = FileConverter.class, required = true, description = "File to database.")
     protected File database_file = null;
 
+    @Parameter(names = { "-k", "--database-options" }, description = "Database options set in database connection url.")
+    protected String database_options = "";
+
     @Parameter(names = { "-p", "--discard-database" }, description = "Discard an existing database.")
     protected boolean discard_database = false;
 
@@ -149,16 +152,18 @@ public class CrawlingSimulator {
                 database_file.delete();
             } else {
                 // Check other file ...
-                File database_other_file = new File(database_file.getAbsolutePath() + ".mv.db");
-                if (database_other_file.exists() && database_other_file.isFile()) {
-                    log.info("Discarding other existing database file ...");
-                    database_other_file.delete();
-                } // if
+                for (String ext : new String[] { ".mv.db", ".trace.db", ".lock.db", ".h2.db" }) {
+                    File database_other_file = new File(database_file.getAbsolutePath() + ext);
+                    if (database_other_file.exists() && database_other_file.isFile()) {
+                        log.info("Discarding other existing database file ... {}", database_other_file);
+                        database_other_file.delete();
+                    } // if
+                } // for
             } // if-else
         } // if
 
         DBWebGraphBuilder wg = new DBWebGraphBuilder(show_progress);
-        wg.connectToDB(database_file);
+        wg.connectToDB(database_file, database_options);
 
         wg.loadQualities(quality_file);
         wg.loadGraph(graph_file);

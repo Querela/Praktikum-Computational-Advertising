@@ -2,6 +2,7 @@ package ekip.ca.crawlingsimulator;
 
 import static ekip.ca.crawlingsimulator.Progress.longToSize;
 import static ekip.ca.crawlingsimulator.Progress.longToTime;
+import static ekip.ca.crawlingsimulator.Progress.longToTimeEx;
 
 import java.io.File;
 import java.sql.Connection;
@@ -46,11 +47,19 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         this.seedPages = new ArrayList<>();
     }
 
-    public void connectToDB(File databaseFile) throws Exception {
+    public void connectToDB(File databaseFile, String database_options) throws Exception {
         Class.forName("org.h2.Driver");
 
-        conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath()
-                + ";LOG=0;LOCK_MODE=0;UNDO_LOG=0;AUTOCOMMIT=ON;AUTO_RECONNECT=TRUE;CACHE_TYPE=SOFT_LRU", "", "");
+        if (database_options == null) {
+            database_options = "";
+        } else if (database_options.length() > 0 && !database_options.startsWith(";")) {
+            database_options = ';' + database_options;
+        } // if-else
+
+        database_options = ";AUTOCOMMIT=ON;AUTO_RECONNECT=TRUE" + database_options;
+        log.debug("Use db options: {}", database_options);
+
+        conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath() + database_options, "", "");
 
         log.debug("(Re-) Create queue tables ...");
         Statement stmt = conn.createStatement();
@@ -188,6 +197,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
         log.debug("Begin reading graph file ...");
         String line = null;
+        pgrs.update();
         while ((line = pgrs.nextLine()) != null) {
             pgrs.update();
             if (pgrs.hasNewPercent()) {
@@ -220,7 +230,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // while
 
         pgrs.finish();
-        log.info("Took {} for graph parsing.", longToTime(pgrs.getTotalTime()));
+        log.info("Took {} for graph parsing.", longToTimeEx(pgrs.getTotalTime()));
 
         // log.info("Adding referential constraints to db web graph");
         // try {
@@ -356,7 +366,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // if
         } // while
 
-        log.info("Took {} for quality insert.", longToTime(pgrs.getTotalTime()));
+        log.info("Took {} for quality insert.", longToTimeEx(pgrs.getTotalTime()));
 
         pgrs.finish();
     }
@@ -381,7 +391,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // while
 
             pgrs.finish();
-            log.info("Took {} for reading {}/{} seeds.", longToTime(pgrs.getTotalTime()), seedPages.size(),
+            log.info("Took {} for reading {}/{} seeds.", longToTimeEx(pgrs.getTotalTime()), seedPages.size(),
                     pgrs.getLineNr());
         } catch (Exception e) {
             log.error("read seed file fail", e);
