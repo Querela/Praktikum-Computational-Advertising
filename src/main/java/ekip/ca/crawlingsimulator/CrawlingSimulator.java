@@ -180,8 +180,10 @@ public class CrawlingSimulator {
         long startTime = System.currentTimeMillis();
         long lastStepDuration = 10000;
         PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
+        Float[] qualitySteps = new Float[number_of_crawling_steps];
         // Adding Seeds to Queue with Priority
         pcq.addPages(wg.getSeedWebPages(), 20);
+        log.info("Seeds in Queue: {}", pcq.getNumberOfElements());
         log.info("Initialize of Ressources done!");
 
         // do crawling
@@ -216,7 +218,7 @@ public class CrawlingSimulator {
                 List<WebPage> linkedPagesPassToQueue = new ArrayList<>();
                 for (WebPage isInDB : linkedPages) {
                     // make look up if page was already crawled
-                    if (true) {
+                    if (isInDB.hasBeenVisited()) {
                         linkedPagesPassToQueue.add(isInDB);
                     }
                 }
@@ -228,25 +230,40 @@ public class CrawlingSimulator {
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
                 qualityCrawl = goodDocuments / documents;
-                // write file in output path with quality mapping
-                String filepath = "qualityCrawl-Step-" + String.valueOf((i + 1)) + ".txt";
-                Writer writer = null;
-                try {
-                    writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filepath), "utf-8"));
-                    writer.write(String.valueOf(qualityCrawl));
-                } catch (IOException ex) {
-                    log.debug("While try to create quality mapping output file a error occur!", ex);
-                } finally {
-                    try {
-                        writer.close();
-                    } catch (Exception ex) {
-                    }
+                if(i < qualitySteps.length) {
+                	qualitySteps[i] = qualityCrawl;
+                } else {
+                	log.info("Array index error!");
                 }
             }
             // calc time for each step
             lastStepDuration = System.currentTimeMillis() - timeStartLoop;
 
         }
+        
+        // write results to output file qualitySteps
+        if(qualitySteps.length > 0) {
+        	// write file in output path with quality mapping
+            String filepath = "out.txt";
+            Writer writer = null;
+            try {
+                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filepath), "utf-8"));
+                for(int i=0; i < qualitySteps.length; i++) {
+                	writer.write( "Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]));
+            	}
+            } catch (IOException ex) {
+                log.debug("While try to create quality mapping output file a error occur!", ex);
+            } finally {
+                try {
+                    writer.close();
+                } catch (Exception ex) {
+                }
+            }
+
+        } else {
+        	log.info("No quality steps recorded!");
+        }
+        
         // pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
         // for (int i = 0; i < 7; i++) {
         // Object o = pcq.getNextPage();
