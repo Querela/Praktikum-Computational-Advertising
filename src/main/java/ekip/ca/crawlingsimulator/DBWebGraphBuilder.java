@@ -76,10 +76,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             stmt.close();
         } // if
 
-
         log.debug("Prepare statements ...");
-        pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)",
-                Statement.RETURN_GENERATED_KEYS);
+        pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)", Statement.RETURN_GENERATED_KEYS);
         pstmt_insert_good_url = conn
                 .prepareStatement("INSERT INTO pages (url, quality) SELECT ?, TRUE FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
         pstmt_insert_link = conn.prepareStatement("INSERT INTO relations (id1, id2) VALUES (?, ?)");
@@ -541,9 +539,19 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     if (!_visited) {
 
                         try {
-                            pstmt_insert_page_visited.setLong(1, _id);
-                            // logSQL.debug("{}", pstmt_insert_page_visited);
-                            pstmt_insert_page_visited.executeUpdate();
+                            pstmt_select_was_page_visited.setLong(1, _id);
+                            // logSQL.debug("{}",
+                            // pstmt_select_was_page_visited);
+                            ResultSet rs = pstmt_select_was_page_visited.executeQuery();
+                            if (rs.next()) {
+                                _visited = true;
+                            } else {
+                                pstmt_insert_page_visited.setLong(1, _id);
+                                // logSQL.debug("{}",
+                                // pstmt_insert_page_visited);
+                                pstmt_insert_page_visited.executeUpdate();
+                            } // if-else
+                            rs.close();
                         } catch (Exception e) {
                             log.error(e.getLocalizedMessage());
                         } // try-catch
@@ -569,7 +577,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     } // if
                     rs.close();
                 } catch (Exception e) {
-                    log.error("check visited", e);
+                    log.error(e.getLocalizedMessage());
                 } // try-catch
 
                 return _visited;

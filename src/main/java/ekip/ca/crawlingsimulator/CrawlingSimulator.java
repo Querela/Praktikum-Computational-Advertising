@@ -195,8 +195,9 @@ public class CrawlingSimulator {
             float qualityCrawl = 0;
             // write status to console
             log.info("Actual Crawling Step: {}", i + 1);
-            log.info("Actual Progress: {} %", String.format("%.2f", (((float)i / (float)number_of_crawling_steps)*100)));
-            
+            log.info("Actual Progress: {} %",
+                    String.format("%.2f", (((float) i / (float) number_of_crawling_steps) * 100)));
+
             log.info("Duration Last Step: {}", longToTime(lastStepDuration));
             log.info("Remaining Time: {}", longToTime((number_of_crawling_steps - i) * lastStepDuration));
             log.info("Elapsed Time: {}", longToTime(System.currentTimeMillis() - startTime));
@@ -233,31 +234,32 @@ public class CrawlingSimulator {
                 i = number_of_crawling_steps;
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
-                qualityCrawl = (float)goodDocuments / (float)documents;
+                qualityCrawl = (float) goodDocuments / (float) documents;
                 log.info("Calced Quality: {}", qualityCrawl);
                 log.info("goodDocuments: {}", goodDocuments);
                 log.info("documents: {}", documents);
-                if(i < qualitySteps.length) {
-                	qualitySteps[i] = qualityCrawl;
+                if (i < qualitySteps.length) {
+                    qualitySteps[i] = qualityCrawl;
                 } else {
-                	log.info("Array index error!");
+                    log.info("Array index error!");
                 }
             }
             // calc time for each step
             lastStepDuration = System.currentTimeMillis() - timeStartLoop;
 
         }
-        
+
         // write results to output file qualitySteps
-        if(qualitySteps.length > 0) {
-        	// write file in output path with quality mapping
-            String filepath = "out.txt";
+        if (qualitySteps.length > 0) {
+            // write file in output path with quality mapping
             Writer writer = null;
             try {
-                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filepath), "utf-8"));
-                for(int i=0; i < qualitySteps.length; i++) {
-                	writer.write( "Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]) + "\r\n");
-            	}
+                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(step_quality_output_file),
+                        "utf-8"));
+                for (int i = 0; i < qualitySteps.length; i++) {
+                    writer.write("Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i])
+                            + "\r\n");
+                }
             } catch (IOException ex) {
                 log.debug("While try to create quality mapping output file a error occur!", ex);
             } finally {
@@ -268,9 +270,9 @@ public class CrawlingSimulator {
             }
 
         } else {
-        	log.info("No quality steps recorded!");
+            log.info("No quality steps recorded!");
         }
-        
+
         // pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
         // for (int i = 0; i < 7; i++) {
         // Object o = pcq.getNextPage();
