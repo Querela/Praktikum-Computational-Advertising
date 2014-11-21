@@ -28,6 +28,10 @@ local.properties
 # PDT-specific
 .buildpath
 
+backup/
+logs/
+out.txt
+
 # Properties
 *.properties
 params

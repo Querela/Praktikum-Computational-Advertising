@@ -133,8 +133,7 @@ public class CrawlingSimulator {
 
         // simulate
         log.info("Start Crawling Simulator ...");
-        // not ready for start !
-        // runSimulation(wg);
+        runSimulation(wg);
         log.info("Stop Crawling Simulator.");
         return this;
     }
@@ -219,27 +218,27 @@ public class CrawlingSimulator {
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
                 qualityCrawl = goodDocuments / documents;
-                if(i < qualitySteps.length) {
-                	qualitySteps[i] = qualityCrawl;
+                if (i < qualitySteps.length) {
+                    qualitySteps[i] = qualityCrawl;
                 } else {
-                	log.info("Array index error!");
+                    log.info("Array index error!");
                 }
             }
             // calc time for each step
             lastStepDuration = System.currentTimeMillis() - timeStartLoop;
 
         }
-        
+
         // write results to output file qualitySteps
-        if(qualitySteps.length > 0) {
-        	// write file in output path with quality mapping
-            String filepath = "out.txt";
+        if (qualitySteps.length > 0) {
+            // write file in output path with quality mapping
             Writer writer = null;
             try {
-                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filepath), "utf-8"));
-                for(int i=0; i < qualitySteps.length; i++) {
-                	writer.write( "Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]));
-            	}
+                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(step_quality_output_file),
+                        "utf-8"));
+                for (int i = 0; i < qualitySteps.length; i++) {
+                    writer.write("Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]));
+                }
             } catch (IOException ex) {
                 log.debug("While try to create quality mapping output file a error occur!", ex);
             } finally {
@@ -250,9 +249,9 @@ public class CrawlingSimulator {
             }
 
         } else {
-        	log.info("No quality steps recorded!");
+            log.info("No quality steps recorded!");
         }
-        
+
         // pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
         // for (int i = 0; i < 7; i++) {
         // Object o = pcq.getNextPage();
