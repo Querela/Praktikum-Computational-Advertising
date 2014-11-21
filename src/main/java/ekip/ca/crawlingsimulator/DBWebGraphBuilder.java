@@ -74,25 +74,25 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             // stmt.executeUpdate("CREATE UNIQUE HASH INDEX IF NOT EXISTS INDEX_pages_url ON pages(url)");
             stmt.executeUpdate("CREATE INDEX IF NOT EXISTS INDEX_relations ON relations(id1)");
             stmt.close();
+        } // if
 
-            log.debug("Prepare statements ...");
-            pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)",
-                    Statement.RETURN_GENERATED_KEYS);
-            pstmt_insert_good_url = conn
-                    .prepareStatement("INSERT INTO pages (url, quality) SELECT ?, TRUE FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
-            pstmt_insert_link = conn.prepareStatement("INSERT INTO relations (id1, id2) VALUES (?, ?)");
 
-            pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
+        log.debug("Prepare statements ...");
+        pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)",
+                Statement.RETURN_GENERATED_KEYS);
+        pstmt_insert_good_url = conn
+                .prepareStatement("INSERT INTO pages (url, quality) SELECT ?, TRUE FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
+        pstmt_insert_link = conn.prepareStatement("INSERT INTO relations (id1, id2) VALUES (?, ?)");
+        pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
 
-            pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ?");
-            pstmt_select_all_from_id = conn.prepareStatement("SELECT quality, url FROM pages WHERE id = ?");
-            pstmt_select_id_from_url = conn.prepareStatement("SELECT TOP 1 id FROM pages WHERE url = ?");
-            pstmt_select_all_from_url = conn.prepareStatement("SELECT TOP 1 id, quality FROM pages WHERE url = ?");
-            pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
+        pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ?");
+        pstmt_select_all_from_id = conn.prepareStatement("SELECT quality, url FROM pages WHERE id = ?");
+        pstmt_select_id_from_url = conn.prepareStatement("SELECT TOP 1 id FROM pages WHERE url = ?");
+        pstmt_select_all_from_url = conn.prepareStatement("SELECT TOP 1 id, quality FROM pages WHERE url = ?");
+        pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
 
-            pstmt_select_was_page_visited = conn.prepareStatement("SELECT TOP 1 * FROM pages_visited WHERE id = ?");
-            pstmt_insert_page_visited = conn.prepareStatement("INSERT INTO pages_visited (id) VALUES (?)");
-        } // if-else
+        pstmt_select_was_page_visited = conn.prepareStatement("SELECT TOP 1 * FROM pages_visited WHERE id = ?");
+        pstmt_insert_page_visited = conn.prepareStatement("INSERT INTO pages_visited (id) VALUES (?)");
 
         // String[] types = { "TABLE", "SYSTEM TABLE" };
         //
