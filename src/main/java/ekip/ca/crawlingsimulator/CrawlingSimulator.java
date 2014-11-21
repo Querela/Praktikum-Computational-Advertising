@@ -206,7 +206,7 @@ public class CrawlingSimulator {
                 List<WebPage> linkedPagesPassToQueue = new ArrayList<>();
                 for (WebPage isInDB : linkedPages) {
                     // make look up if page was already crawled
-                    if (isInDB.hasBeenVisited()) {
+                    if (!isInDB.hasBeenVisited()) {
                         linkedPagesPassToQueue.add(isInDB);
                     }
                 }

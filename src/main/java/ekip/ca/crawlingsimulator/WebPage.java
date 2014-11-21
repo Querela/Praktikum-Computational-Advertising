@@ -36,7 +36,7 @@ public interface WebPage {
     public List<WebPage> getLinkedPages();
 
     /**
-     * Has this page been visited/progressed?
+     * Has this page been visited/processed?
      * 
      * @return boolean
      */

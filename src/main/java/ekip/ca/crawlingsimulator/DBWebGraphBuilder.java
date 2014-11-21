@@ -608,7 +608,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     } // if
                     rs.close();
                 } catch (Exception e) {
-                    log.error("check visited", e);
+                    log.error(e.getLocalizedMessage());
                 } // try-catch
 
                 return _visited;
