@@ -146,23 +146,7 @@ public class CrawlingSimulator {
      * @throws Exception
      */
     public WebGraph setupData() throws Exception {
-        if (discard_database) {
-            if (database_file.exists() && database_file.isFile()) {
-                log.info("Discarding existing database file ...");
-                database_file.delete();
-            } else {
-                // Check other file ...
-                for (String ext : new String[] { ".mv.db", ".trace.db", ".lock.db", ".h2.db" }) {
-                    File database_other_file = new File(database_file.getAbsolutePath() + ext);
-                    if (database_other_file.exists() && database_other_file.isFile()) {
-                        log.info("Discarding other existing database file ... {}", database_other_file);
-                        database_other_file.delete();
-                    } // if
-                } // for
-            } // if-else
-        } // if
-
-        DBWebGraphBuilder wg = new DBWebGraphBuilder(show_progress);
+        DBWebGraphBuilder wg = new DBWebGraphBuilder(show_progress, discard_database);
         wg.connectToDB(database_file, database_options);
 
         wg.loadQualities(quality_file);
