@@ -73,7 +73,6 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
             WebPage page = getNextPage();
             if (page != null) {
                 l.add(page);
-                break;
             } // if
         }
 

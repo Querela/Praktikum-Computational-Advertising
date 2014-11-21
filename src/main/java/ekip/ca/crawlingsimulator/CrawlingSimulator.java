@@ -195,13 +195,15 @@ public class CrawlingSimulator {
             float qualityCrawl = 0;
             // write status to console
             log.info("Actual Crawling Step: {}", i + 1);
-            log.info("Actual Progress: {}", String.format("%.2f", (float) (i / number_of_crawling_steps)));
+            log.info("Actual Progress: {} %", String.format("%.2f", (((float)i / (float)number_of_crawling_steps)*100)));
+            
             log.info("Duration Last Step: {}", longToTime(lastStepDuration));
             log.info("Remaining Time: {}", longToTime((number_of_crawling_steps - i) * lastStepDuration));
             log.info("Elapsed Time: {}", longToTime(System.currentTimeMillis() - startTime));
             log.info("Elements in Queue: {}", pcq.getNumberOfElements());
             // get data from Queue
             List<WebPage> pages = pcq.getNextPages(urls_per_step);
+            log.info("Size from Queue after poll pages: {}", pcq.getNumberOfElements());
             log.info("Value from Param urls_per_step: {}", urls_per_step);
             log.info("Number of Pages poll from queue: {}", pages.size());
             for (WebPage page : pages) {
@@ -231,7 +233,7 @@ public class CrawlingSimulator {
                 i = number_of_crawling_steps;
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
-                qualityCrawl = goodDocuments / documents;
+                qualityCrawl = (float)goodDocuments / (float)documents;
                 log.info("Calced Quality: {}", qualityCrawl);
                 log.info("goodDocuments: {}", goodDocuments);
                 log.info("documents: {}", documents);
@@ -254,7 +256,7 @@ public class CrawlingSimulator {
             try {
                 writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filepath), "utf-8"));
                 for(int i=0; i < qualitySteps.length; i++) {
-                	writer.write( "Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]));
+                	writer.write( "Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]) + "\r\n");
             	}
             } catch (IOException ex) {
                 log.debug("While try to create quality mapping output file a error occur!", ex);
