@@ -32,6 +32,8 @@ import com.beust.jcommander.ParameterException;
 public class CrawlingSimulator {
     private final static Logger log = LoggerFactory.getLogger(CrawlingSimulator.class);
 
+    private final static String NL = "\r\n";
+
     /**
      * Converts String parameer to File object for JCommander.
      */
@@ -183,13 +185,17 @@ public class CrawlingSimulator {
             float qualityCrawl = 0;
             // write status to console
             log.info("Actual Crawling Step: {}", i + 1);
-            log.info("Actual Progress: {}", String.format("%.2f %", i / number_of_crawling_steps));
+            log.info("Actual Progress: {} %", String.format("%.2f", ((i / (float) number_of_crawling_steps) * 100)));
+
             log.info("Duration Last Step: {}", longToTime(lastStepDuration));
             log.info("Remaining Time: {}", longToTime((number_of_crawling_steps - i) * lastStepDuration));
             log.info("Elapsed Time: {}", longToTime(System.currentTimeMillis() - startTime));
             log.info("Elements in Queue: {}", pcq.getNumberOfElements());
             // get data from Queue
             List<WebPage> pages = pcq.getNextPages(urls_per_step);
+            log.info("Size from Queue after poll pages: {}", pcq.getNumberOfElements());
+            log.info("Value from Param urls_per_step: {}", urls_per_step);
+            log.info("Number of Pages poll from queue: {}", pages.size());
             for (WebPage page : pages) {
                 // 1.Step search each Page in quality database
                 // 2.Step calc quality
@@ -217,7 +223,10 @@ public class CrawlingSimulator {
                 i = number_of_crawling_steps;
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
-                qualityCrawl = goodDocuments / documents;
+                qualityCrawl = goodDocuments / (float) documents;
+                log.info("Calced Quality: {}", qualityCrawl);
+                log.info("goodDocuments: {}", goodDocuments);
+                log.info("documents: {}", documents);
                 if (i < qualitySteps.length) {
                     qualitySteps[i] = qualityCrawl;
                 } else {
@@ -237,7 +246,7 @@ public class CrawlingSimulator {
                 writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(step_quality_output_file),
                         "utf-8"));
                 for (int i = 0; i < qualitySteps.length; i++) {
-                    writer.write("Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]));
+                    writer.write("Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]) + NL);
                 }
             } catch (IOException ex) {
                 log.debug("While try to create quality mapping output file a error occur!", ex);

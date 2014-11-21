@@ -580,9 +580,19 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     if (!_visited) {
 
                         try {
-                            pstmt_insert_page_visited.setLong(1, _id);
-                            // logSQL.debug("{}", pstmt_insert_page_visited);
-                            pstmt_insert_page_visited.executeUpdate();
+                            pstmt_select_was_page_visited.setLong(1, _id);
+                            // logSQL.debug("{}",
+                            // pstmt_select_was_page_visited);
+                            ResultSet rs = pstmt_select_was_page_visited.executeQuery();
+                            if (rs.next()) {
+                                _visited = true;
+                            } else {
+                                pstmt_insert_page_visited.setLong(1, _id);
+                                // logSQL.debug("{}",
+                                // pstmt_insert_page_visited);
+                                pstmt_insert_page_visited.executeUpdate();
+                            } // if-else
+                            rs.close();
                         } catch (Exception e) {
                             log.error(e.getLocalizedMessage());
                         } // try-catch
