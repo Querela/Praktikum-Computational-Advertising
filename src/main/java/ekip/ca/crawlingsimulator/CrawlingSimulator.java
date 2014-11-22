@@ -203,19 +203,19 @@ public class CrawlingSimulator {
             } // if
 
             // write status to console
-            log.info("Actual Crawling Step: {}", i + 1);
+            log.debug("Actual Crawling Step: {}", i + 1);
             log.info("Actual Progress: {} %",
                     String.format("%.2f", (((float) i / (float) number_of_crawling_steps) * 100)));
 
-            log.info("Duration Last Step: {}", longToTime(lastStepDuration));
+            log.debug("Duration Last Step: {}", longToTime(lastStepDuration));
             log.info("Remaining Time: {}", longToTime((number_of_crawling_steps - i) * lastStepDuration));
             log.info("Elapsed Time: {}", longToTime(System.currentTimeMillis() - startTime));
-            log.info("Elements in Queue: {}", pcq.getNumberOfElements());
+            log.debug("Elements in Queue: {}", pcq.getNumberOfElements());
             // get data from Queue
             List<WebPage> pages = pcq.getNextPages(urls_per_step);
-            log.info("Size from Queue after poll pages: {}", pcq.getNumberOfElements());
-            log.info("Value from Param urls_per_step: {}", urls_per_step);
-            log.info("Number of Pages poll from queue: {}", pages.size());
+            log.debug("Size from Queue after poll pages: {}", pcq.getNumberOfElements());
+            log.debug("Value from Param urls_per_step: {}", urls_per_step);
+            log.debug("Number of Pages poll from queue: {}", pages.size());
             for (WebPage page : pages) {
                 // 1.Step search each Page in quality database
                 // 2.Step calc quality
@@ -244,9 +244,9 @@ public class CrawlingSimulator {
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
                 float qualityCrawl = (float) goodDocuments / (float) documents;
-                log.info("Calced Quality: {}", qualityCrawl);
-                log.info("goodDocuments: {}", goodDocuments);
-                log.info("documents: {}", documents);
+                log.debug("Calced Quality: {}", qualityCrawl);
+                log.debug("goodDocuments: {}", goodDocuments);
+                log.debug("documents: {}", documents);
                 if (i < qualitySteps.length) {
                     qualitySteps[i] = qualityCrawl;
                 } else {
