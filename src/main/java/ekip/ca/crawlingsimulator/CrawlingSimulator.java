@@ -198,7 +198,8 @@ public class CrawlingSimulator {
             long timeStartLoop = System.currentTimeMillis();
 
             if (step_quality_for_single_steps) {
-                documents = 0;
+                //documents = 0;
+            	// only good documents will be reseted for each step
                 goodDocuments = 0;
             } // if
 
