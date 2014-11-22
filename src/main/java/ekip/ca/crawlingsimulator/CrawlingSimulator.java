@@ -65,6 +65,9 @@ public class CrawlingSimulator {
     @Parameter(names = { "-o", "--step-quality-output-file" }, converter = FileConverter.class, required = true, description = "Output file with quality per step.")
     protected File step_quality_output_file = null;
 
+    @Parameter(names = { "-m", "--step-quality-for-single-steps" }, description = "Should the step quality computation be reset after each step or should it be computed over the whole crawling process.")
+    protected boolean step_quality_for_single_steps = true;
+
     @Parameter(names = { "-n", "--num-crawl-steps" }, required = false, description = "Number of crawling steps.")
     protected Integer number_of_crawling_steps = 5000;
 
@@ -176,26 +179,33 @@ public class CrawlingSimulator {
         log.info("Seeds in Queue: {}", pcq.getNumberOfElements());
         log.info("Initialize of Ressources done!");
 
+        int documents = 0;
+        int goodDocuments = 0;
+
         // do crawling
         for (int i = 0; i < number_of_crawling_steps; i++) {
             // Init local Ressources
             long timeStartLoop = System.currentTimeMillis();
-            int documents = 0;
-            int goodDocuments = 0;
-            float qualityCrawl = 0;
+
+            if (step_quality_for_single_steps) {
+                documents = 0;
+                // only good documents will be reset for each step?
+                goodDocuments = 0;
+            } // if
+
             // write status to console
             log.info("Actual Crawling Step: {}", i + 1);
             log.info("Actual Progress: {} %", String.format("%.2f", ((i / (float) number_of_crawling_steps) * 100)));
 
-            log.info("Duration Last Step: {}", longToTime(lastStepDuration));
+            log.debug("Duration Last Step: {}", longToTime(lastStepDuration));
             log.info("Remaining Time: {}", longToTime((number_of_crawling_steps - i) * lastStepDuration));
             log.info("Elapsed Time: {}", longToTime(System.currentTimeMillis() - startTime));
-            log.info("Elements in Queue: {}", pcq.getNumberOfElements());
+            log.debug("Elements in Queue: {}", pcq.getNumberOfElements());
             // get data from Queue
             List<WebPage> pages = pcq.getNextPages(urls_per_step);
-            log.info("Size from Queue after poll pages: {}", pcq.getNumberOfElements());
-            log.info("Value from Param urls_per_step: {}", urls_per_step);
-            log.info("Number of Pages poll from queue: {}", pages.size());
+            log.debug("Size from Queue after poll pages: {}", pcq.getNumberOfElements());
+            log.debug("Value from Param urls_per_step: {}", urls_per_step);
+            log.debug("Number of Pages poll from queue: {}", pages.size());
             for (WebPage page : pages) {
                 // 1.Step search each Page in quality database
                 // 2.Step calc quality
@@ -223,10 +233,10 @@ public class CrawlingSimulator {
                 i = number_of_crawling_steps;
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
-                qualityCrawl = goodDocuments / (float) documents;
-                log.info("Calced Quality: {}", qualityCrawl);
-                log.info("goodDocuments: {}", goodDocuments);
-                log.info("documents: {}", documents);
+                float qualityCrawl = (float) goodDocuments / (float) documents;
+                log.debug("Calced Quality: {}", qualityCrawl);
+                log.debug("goodDocuments: {}", goodDocuments);
+                log.debug("documents: {}", documents);
                 if (i < qualitySteps.length) {
                     qualitySteps[i] = qualityCrawl;
                 } else {
@@ -235,7 +245,6 @@ public class CrawlingSimulator {
             }
             // calc time for each step
             lastStepDuration = System.currentTimeMillis() - timeStartLoop;
-
         }
 
         // write results to output file qualitySteps
@@ -260,12 +269,6 @@ public class CrawlingSimulator {
         } else {
             log.info("No quality steps recorded!");
         }
-
-        // pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
-        // for (int i = 0; i < 7; i++) {
-        // Object o = pcq.getNextPage();
-        // log.info("o=" + o);
-        // } // for
     }
 
     /**
