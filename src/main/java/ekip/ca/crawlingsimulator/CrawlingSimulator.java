@@ -65,8 +65,8 @@ public class CrawlingSimulator {
     @Parameter(names = { "-o", "--step-quality-output-file" }, converter = FileConverter.class, required = true, description = "Output file with quality per step.")
     protected File step_quality_output_file = null;
 
-    @Parameter(names = { "-m", "--step-quality-for-single-steps" }, description = "Should the step quality computation be reset after each step or should it be computed over the whole crawling process.")
-    protected boolean step_quality_for_single_steps = true;
+    @Parameter(names = { "-m", "--step-quality-for-single-steps" }, arity = 1, description = "Should the step quality computation be reset after each step or should it be computed over the whole crawling process.")
+    protected boolean step_quality_for_single_steps = false;
 
     @Parameter(names = { "-n", "--num-crawl-steps" }, required = false, description = "Number of crawling steps.")
     protected Integer number_of_crawling_steps = 5000;
@@ -167,8 +167,6 @@ public class CrawlingSimulator {
      *            Web graph to simulate on
      */
     public void runSimulation(WebGraph wg) {
-        // TODO: simulate
-
         // Init Ressources
         long startTime = System.currentTimeMillis();
         long lastStepDuration = 10000;
