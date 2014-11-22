@@ -28,7 +28,8 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
             i = (this.priority - arg0.priority);
 
             if (i == 0) {
-                i = (this.quality - arg0.quality);
+                // in first task the quality should not be considered!
+                // i = (this.quality - arg0.quality);
 
                 if (i == 0) {
                     i = (int) (this.insert - arg0.insert);
