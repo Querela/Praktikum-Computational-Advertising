@@ -1,7 +1,6 @@
 package ekip.ca.crawlingsimulator;
 
-import static ekip.ca.crawlingsimulator.Progress.longToSize;
-import static ekip.ca.crawlingsimulator.Progress.longToTime;
+import static ekip.ca.crawlingsimulator.Progress.longToTimeEx;
 
 import java.io.File;
 import java.sql.Connection;
@@ -18,13 +17,21 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Class for building and querying a web graph with a database in the back-end.
+ * Here the database is H2.
+ * 
+ * @author Erik Körner
+ * @author Immanuel Plath
+ */
 public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     final static Logger log = LoggerFactory.getLogger(DBWebGraphBuilder.class);
     // final static Logger logSQL = LoggerFactory.getLogger("SQL");
 
     protected final static long gc_line_count = 100000L;
 
-    protected boolean showProgress = false;
+    protected boolean show_progress = false;
+    protected boolean discard_database = false;
     protected Connection conn = null;
     protected boolean hasData = false;
     protected PreparedStatement pstmt_insert_url;
@@ -41,23 +48,81 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
     protected List<WebPage> seedPages;
 
-    public DBWebGraphBuilder(boolean show_progress) {
-        this.showProgress = show_progress;
+    /**
+     * Create a new DBWebGraphBuilder.
+     * 
+     * @param show_progress
+     *            Show progress in GUI
+     * @param discard_database
+     *            Discard old database
+     */
+    public DBWebGraphBuilder(boolean show_progress, boolean discard_database) {
+        this.show_progress = show_progress;
+        this.discard_database = discard_database;
         this.seedPages = new ArrayList<>();
     }
 
-    public void connectToDB(File databaseFile) throws Exception {
+    /**
+     * Deletes database files for the given name.
+     * 
+     * @param database_file
+     *            Filename or part of it to delete the database files
+     */
+    protected void discardDB(File database_file) {
+        if (discard_database) {
+            if (database_file.exists() && database_file.isFile()) {
+                log.info("Discarding existing database file ...");
+                database_file.delete();
+            } else {
+                // Check other file ...
+                for (String ext : new String[] { ".mv.db", ".trace.db", ".lock.db", ".h2.db" }) {
+                    File database_other_file = new File(database_file.getAbsolutePath() + ext);
+                    if (database_other_file.exists() && database_other_file.isFile()) {
+                        log.info("Discarding other existing database file ... {}", database_other_file);
+                        database_other_file.delete();
+                    } // if
+                } // for
+            } // if-else
+        } // if
+    }
+
+    /**
+     * Connect to database and prepare database for later work (e. g. select and
+     * insert)
+     * 
+     * @param databaseFile
+     *            file of database (here only part of the name for H2)
+     * @param database_options
+     *            options when opening the database connection
+     * @throws Exception
+     */
+    public void connectToDB(File databaseFile, String database_options) throws Exception {
+        discardDB(databaseFile);
+
+        // Load H2 db driver
         Class.forName("org.h2.Driver");
 
-        conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath()
-                + ";LOG=0;LOCK_MODE=0;UNDO_LOG=0;AUTOCOMMIT=ON;AUTO_RECONNECT=TRUE;CACHE_TYPE=SOFT_LRU", "", "");
+        // Prepare db options
+        if (database_options == null) {
+            database_options = "";
+        } else if (database_options.length() > 0 && !database_options.startsWith(";")) {
+            database_options = ';' + database_options;
+        } // if-else
 
+        database_options = ";AUTOCOMMIT=ON;AUTO_RECONNECT=TRUE" + database_options;
+        log.debug("Use db options: {}", database_options);
+
+        // Connect to db
+        conn = DriverManager.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath() + database_options, "", "");
+
+        // Create temp tables
         log.debug("(Re-) Create queue tables ...");
         Statement stmt = conn.createStatement();
         stmt.executeUpdate("DROP TABLE IF EXISTS pages_visited");
         stmt.executeUpdate("CREATE TABLE pages_visited (id BIGINT PRIMARY KEY)");
         stmt.close();
 
+        // Check if empty db then create new tables
         DatabaseMetaData dbmd = conn.getMetaData();
         ResultSet tables = dbmd.getTables(null, null, "PAGES", new String[] { "TABLE" });
         if (tables.next()) {
@@ -74,25 +139,24 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             // stmt.executeUpdate("CREATE UNIQUE HASH INDEX IF NOT EXISTS INDEX_pages_url ON pages(url)");
             stmt.executeUpdate("CREATE INDEX IF NOT EXISTS INDEX_relations ON relations(id1)");
             stmt.close();
+        } // if
 
-            log.debug("Prepare statements ...");
-            pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)",
-                    Statement.RETURN_GENERATED_KEYS);
-            pstmt_insert_good_url = conn
-                    .prepareStatement("INSERT INTO pages (url, quality) SELECT ?, TRUE FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
-            pstmt_insert_link = conn.prepareStatement("INSERT INTO relations (id1, id2) VALUES (?, ?)");
+        // Prepare statements for insert and select
+        log.debug("Prepare statements ...");
+        pstmt_insert_url = conn.prepareStatement("INSERT INTO pages (url) VALUES (?)", Statement.RETURN_GENERATED_KEYS);
+        pstmt_insert_good_url = conn
+                .prepareStatement("INSERT INTO pages (url, quality) SELECT ?, TRUE FROM DUAL WHERE NOT EXISTS (SELECT * FROM pages WHERE url = ?)");
+        pstmt_insert_link = conn.prepareStatement("INSERT INTO relations (id1, id2) VALUES (?, ?)");
+        pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
 
-            pstmt_update_quality = conn.prepareStatement("UPDATE pages SET quality = TRUE WHERE url = ?");
+        pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ?");
+        pstmt_select_all_from_id = conn.prepareStatement("SELECT quality, url FROM pages WHERE id = ?");
+        pstmt_select_id_from_url = conn.prepareStatement("SELECT TOP 1 id FROM pages WHERE url = ?");
+        pstmt_select_all_from_url = conn.prepareStatement("SELECT TOP 1 id, quality FROM pages WHERE url = ?");
+        pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
 
-            pstmt_select_from_id = conn.prepareStatement("SELECT quality FROM pages WHERE id = ?");
-            pstmt_select_all_from_id = conn.prepareStatement("SELECT quality, url FROM pages WHERE id = ?");
-            pstmt_select_id_from_url = conn.prepareStatement("SELECT TOP 1 id FROM pages WHERE url = ?");
-            pstmt_select_all_from_url = conn.prepareStatement("SELECT TOP 1 id, quality FROM pages WHERE url = ?");
-            pstmt_select_linked = conn.prepareStatement("SELECT r.id2 FROM relations AS r WHERE r.id1 = ?");
-
-            pstmt_select_was_page_visited = conn.prepareStatement("SELECT TOP 1 * FROM pages_visited WHERE id = ?");
-            pstmt_insert_page_visited = conn.prepareStatement("INSERT INTO pages_visited (id) VALUES (?)");
-        } // if-else
+        pstmt_select_was_page_visited = conn.prepareStatement("SELECT TOP 1 * FROM pages_visited WHERE id = ?");
+        pstmt_insert_page_visited = conn.prepareStatement("INSERT INTO pages_visited (id) VALUES (?)");
 
         // String[] types = { "TABLE", "SYSTEM TABLE" };
         //
@@ -117,6 +181,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         // System.out.println("Tabellen-Typ: " + tableType + "\n");
         // }
 
+        // Add shutdown hook to close open connections
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
@@ -146,33 +211,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         });
     }
 
-    protected static String formatProgressMessage(long curLine, long curPos, long length, long start) {
-        // > time spend (milli seconds)
-        long diff = System.currentTimeMillis() - start;
-        // > spent time (seconds)
-        // ---- diff / 1000
-        // > speed (line numbers per second):
-        // ---- myLineNr / (diff / 1000)
-        // > (for 1000 lines):
-        // ---- myLineNr / (diff / 1000) / 1000
-        // ---- myLineNr / diff
-        float speed = curLine * 1f / diff;
-        // > line numbers per byte:
-        // ---- myLineNr / (float) pos
-        // > line numbers for whole file:
-        // ---- myLineNr / pos * file_size
-        // > time for all rest lines (in seconds)
-        // ---- (myLineNr / pos * file_size) / (speed * 1000)
-        // > (to millis for convert function)
-        // ---- (myLineNr / pos * file_size) / (speed * 1000) * 1000
-        // ---- (myLineNr / pos * file_size) / speed
-        long timeLeft = (long) (curLine / (float) curPos * (length - curPos) / speed);
-        return String.format(
-                "Progress: (%.2f %%)\n    In line %s (speed: %.2f kL/s)\n    %s / %s\n    >>> %s (left: %s)", curPos
-                        * 100f / length, curLine, speed, longToSize(curPos), longToSize(length), longToTime(diff),
-                longToTime(timeLeft));
-    }
-
     /*
      * (non-Javadoc)
      * 
@@ -184,10 +222,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             return;
         } // if
 
-        final Progress pgrs = new Progress(graph_file, showProgress);
+        final Progress pgrs = new Progress(graph_file, show_progress);
 
         log.debug("Begin reading graph file ...");
         String line = null;
+        pgrs.update();
         while ((line = pgrs.nextLine()) != null) {
             pgrs.update();
             if (pgrs.hasNewPercent()) {
@@ -220,7 +259,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         } // while
 
         pgrs.finish();
-        log.info("Took {} for graph parsing.", longToTime(pgrs.getTotalTime()));
+        log.info("Took {} for graph parsing.", longToTimeEx(pgrs.getTotalTime()));
 
         // log.info("Adding referential constraints to db web graph");
         // try {
@@ -307,7 +346,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             log.error("sql", e);
         } // try-catch
 
-        final Progress pgrs = new Progress(quality_file, showProgress);
+        final Progress pgrs = new Progress(quality_file, show_progress);
 
         log.debug("Begin reading quality mapping ...");
         String line = null;
@@ -356,7 +395,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // if
         } // while
 
-        log.info("Took {} for quality insert.", longToTime(pgrs.getTotalTime()));
+        log.info("Took {} for quality insert.", longToTimeEx(pgrs.getTotalTime()));
 
         pgrs.finish();
     }
@@ -369,7 +408,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     @Override
     public void loadSeeds(File seed_file) {
         try {
-            Progress pgrs = new Progress(seed_file, showProgress);
+            Progress pgrs = new Progress(seed_file, show_progress);
             log.debug("Begin reading seed urls ...");
 
             String line = null;
@@ -381,7 +420,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             } // while
 
             pgrs.finish();
-            log.info("Took {} for reading {}/{} seeds.", longToTime(pgrs.getTotalTime()), seedPages.size(),
+            log.info("Took {} for reading {}/{} seeds.", longToTimeEx(pgrs.getTotalTime()), seedPages.size(),
                     pgrs.getLineNr());
         } catch (Exception e) {
             log.error("read seed file fail", e);
@@ -541,9 +580,19 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     if (!_visited) {
 
                         try {
-                            pstmt_insert_page_visited.setLong(1, _id);
-                            // logSQL.debug("{}", pstmt_insert_page_visited);
-                            pstmt_insert_page_visited.executeUpdate();
+                            pstmt_select_was_page_visited.setLong(1, _id);
+                            // logSQL.debug("{}",
+                            // pstmt_select_was_page_visited);
+                            ResultSet rs = pstmt_select_was_page_visited.executeQuery();
+                            if (rs.next()) {
+                                _visited = true;
+                            } else {
+                                pstmt_insert_page_visited.setLong(1, _id);
+                                // logSQL.debug("{}",
+                                // pstmt_insert_page_visited);
+                                pstmt_insert_page_visited.executeUpdate();
+                            } // if-else
+                            rs.close();
                         } catch (Exception e) {
                             log.error(e.getLocalizedMessage());
                         } // try-catch
@@ -569,7 +618,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     } // if
                     rs.close();
                 } catch (Exception e) {
-                    log.error("check visited", e);
+                    log.error(e.getLocalizedMessage());
                 } // try-catch
 
                 return _visited;

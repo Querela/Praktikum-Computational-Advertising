@@ -200,7 +200,11 @@ public class Progress {
     public String nextLine() {
         try {
             String line = br.readLine();
-            line_nr++;
+
+            if (line != null) {
+                line_nr++;
+            } // if
+
             return line;
         } catch (IOException e) {
             log.error("read line", e);

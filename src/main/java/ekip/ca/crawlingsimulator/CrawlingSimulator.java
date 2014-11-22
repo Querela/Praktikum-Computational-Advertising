@@ -32,6 +32,8 @@ import com.beust.jcommander.ParameterException;
 public class CrawlingSimulator {
     private final static Logger log = LoggerFactory.getLogger(CrawlingSimulator.class);
 
+    private final static String NL = "\r\n";
+
     /**
      * Converts String parameer to File object for JCommander.
      */
@@ -63,6 +65,9 @@ public class CrawlingSimulator {
     @Parameter(names = { "-o", "--step-quality-output-file" }, converter = FileConverter.class, required = true, description = "Output file with quality per step.")
     protected File step_quality_output_file = null;
 
+    @Parameter(names = { "-m", "--step-quality-for-single-steps" }, description = "Should the step quality computation be reset after each step or should it be computed over the whole crawling process.")
+    protected boolean step_quality_for_single_steps = true;
+
     @Parameter(names = { "-n", "--num-crawl-steps" }, required = false, description = "Number of crawling steps.")
     protected Integer number_of_crawling_steps = 5000;
 
@@ -71,6 +76,9 @@ public class CrawlingSimulator {
 
     @Parameter(names = { "-d", "--database-file" }, converter = FileConverter.class, required = true, description = "File to database.")
     protected File database_file = null;
+
+    @Parameter(names = { "-k", "--database-options" }, description = "Database options set in database connection url.")
+    protected String database_options = "";
 
     @Parameter(names = { "-p", "--discard-database" }, description = "Discard an existing database.")
     protected boolean discard_database = false;
@@ -130,8 +138,7 @@ public class CrawlingSimulator {
 
         // simulate
         log.info("Start Crawling Simulator ...");
-        // not ready for start !
-        // runSimulation(wg);
+        runSimulation(wg);
         log.info("Stop Crawling Simulator.");
         return this;
     }
@@ -143,22 +150,8 @@ public class CrawlingSimulator {
      * @throws Exception
      */
     public WebGraph setupData() throws Exception {
-        if (discard_database) {
-            if (database_file.exists() && database_file.isFile()) {
-                log.info("Discarding existing database file ...");
-                database_file.delete();
-            } else {
-                // Check other file ...
-                File database_other_file = new File(database_file.getAbsolutePath() + ".mv.db");
-                if (database_other_file.exists() && database_other_file.isFile()) {
-                    log.info("Discarding other existing database file ...");
-                    database_other_file.delete();
-                } // if
-            } // if-else
-        } // if
-
-        DBWebGraphBuilder wg = new DBWebGraphBuilder(show_progress);
-        wg.connectToDB(database_file);
+        DBWebGraphBuilder wg = new DBWebGraphBuilder(show_progress, discard_database);
+        wg.connectToDB(database_file, database_options);
 
         wg.loadQualities(quality_file);
         wg.loadGraph(graph_file);
@@ -180,26 +173,39 @@ public class CrawlingSimulator {
         long startTime = System.currentTimeMillis();
         long lastStepDuration = 10000;
         PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
+        Float[] qualitySteps = new Float[number_of_crawling_steps];
         // Adding Seeds to Queue with Priority
         pcq.addPages(wg.getSeedWebPages(), 20);
+        log.info("Seeds in Queue: {}", pcq.getNumberOfElements());
         log.info("Initialize of Ressources done!");
+
+        int documents = 0;
+        int goodDocuments = 0;
 
         // do crawling
         for (int i = 0; i < number_of_crawling_steps; i++) {
             // Init local Ressources
             long timeStartLoop = System.currentTimeMillis();
-            int documents = 0;
-            int goodDocuments = 0;
-            float qualityCrawl = 0;
+
+            if (step_quality_for_single_steps) {
+                documents = 0;
+                // only good documents will be reset for each step?
+                goodDocuments = 0;
+            } // if
+
             // write status to console
             log.info("Actual Crawling Step: {}", i + 1);
-            log.info("Actual Progress: {}", String.format("%.2f %", i / number_of_crawling_steps));
-            log.info("Duration Last Step: {}", longToTime(lastStepDuration));
+            log.info("Actual Progress: {} %", String.format("%.2f", ((i / (float) number_of_crawling_steps) * 100)));
+
+            log.debug("Duration Last Step: {}", longToTime(lastStepDuration));
             log.info("Remaining Time: {}", longToTime((number_of_crawling_steps - i) * lastStepDuration));
             log.info("Elapsed Time: {}", longToTime(System.currentTimeMillis() - startTime));
-            log.info("Elements in Queue: {}", pcq.getNumberOfElements());
+            log.debug("Elements in Queue: {}", pcq.getNumberOfElements());
             // get data from Queue
             List<WebPage> pages = pcq.getNextPages(urls_per_step);
+            log.debug("Size from Queue after poll pages: {}", pcq.getNumberOfElements());
+            log.debug("Value from Param urls_per_step: {}", urls_per_step);
+            log.debug("Number of Pages poll from queue: {}", pages.size());
             for (WebPage page : pages) {
                 // 1.Step search each Page in quality database
                 // 2.Step calc quality
@@ -216,7 +222,7 @@ public class CrawlingSimulator {
                 List<WebPage> linkedPagesPassToQueue = new ArrayList<>();
                 for (WebPage isInDB : linkedPages) {
                     // make look up if page was already crawled
-                    if (true) {
+                    if (!isInDB.hasBeenVisited()) {
                         linkedPagesPassToQueue.add(isInDB);
                     }
                 }
@@ -227,31 +233,42 @@ public class CrawlingSimulator {
                 i = number_of_crawling_steps;
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
-                qualityCrawl = goodDocuments / documents;
-                // write file in output path with quality mapping
-                String filepath = "qualityCrawl-Step-" + String.valueOf((i + 1)) + ".txt";
-                Writer writer = null;
-                try {
-                    writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filepath), "utf-8"));
-                    writer.write(String.valueOf(qualityCrawl));
-                } catch (IOException ex) {
-                    log.debug("While try to create quality mapping output file a error occur!", ex);
-                } finally {
-                    try {
-                        writer.close();
-                    } catch (Exception ex) {
-                    }
+                float qualityCrawl = (float) goodDocuments / (float) documents;
+                log.debug("Calced Quality: {}", qualityCrawl);
+                log.debug("goodDocuments: {}", goodDocuments);
+                log.debug("documents: {}", documents);
+                if (i < qualitySteps.length) {
+                    qualitySteps[i] = qualityCrawl;
+                } else {
+                    log.info("Array index error!");
                 }
             }
             // calc time for each step
             lastStepDuration = System.currentTimeMillis() - timeStartLoop;
-
         }
-        // pcq.addPages(Arrays.asList(new WebPage[] {}), 10);
-        // for (int i = 0; i < 7; i++) {
-        // Object o = pcq.getNextPage();
-        // log.info("o=" + o);
-        // } // for
+
+        // write results to output file qualitySteps
+        if (qualitySteps.length > 0) {
+            // write file in output path with quality mapping
+            Writer writer = null;
+            try {
+                writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(step_quality_output_file),
+                        "utf-8"));
+                for (int i = 0; i < qualitySteps.length; i++) {
+                    writer.write("Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]) + NL);
+                }
+            } catch (IOException ex) {
+                log.debug("While try to create quality mapping output file a error occur!", ex);
+            } finally {
+                try {
+                    writer.close();
+                } catch (Exception ex) {
+                }
+            }
+
+        } else {
+            log.info("No quality steps recorded!");
+        }
     }
 
     /**
