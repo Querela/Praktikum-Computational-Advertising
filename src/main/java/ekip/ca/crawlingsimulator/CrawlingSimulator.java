@@ -86,6 +86,9 @@ public class CrawlingSimulator {
     @Parameter(names = { "-i", "--show-progress" }, description = "Show progress while reading files etc.")
     protected boolean show_progress = false;
 
+    @Parameter(names = { "-f", "--output-format" }, arity = 1, description = "If true each line in output-file contains only quality value and no other format string.")
+    protected boolean out_put_float_only_format = false;
+
     /**
      * Empty constructor.
      */
@@ -172,13 +175,12 @@ public class CrawlingSimulator {
         long lastStepDuration = 10000;
         PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
         Float[] qualitySteps = new Float[number_of_crawling_steps];
+        int documents = 0;
+        int goodDocuments = 0;
         // Adding Seeds to Queue with Priority
         pcq.addPages(wg.getSeedWebPages(), 20);
         log.info("Seeds in Queue: {}", pcq.getNumberOfElements());
         log.info("Initialize of Ressources done!");
-
-        int documents = 0;
-        int goodDocuments = 0;
 
         // do crawling
         for (int i = 0; i < number_of_crawling_steps; i++) {
@@ -253,7 +255,12 @@ public class CrawlingSimulator {
                 writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(step_quality_output_file),
                         "utf-8"));
                 for (int i = 0; i < qualitySteps.length; i++) {
-                    writer.write("Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i]) + NL);
+                    if (out_put_float_only_format) {
+                        writer.write(String.valueOf(qualitySteps[i]));
+                    } else {
+                        writer.write("Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i])
+                                + NL);
+                    }
                 }
             } catch (IOException ex) {
                 log.debug("While try to create quality mapping output file a error occur!", ex);
