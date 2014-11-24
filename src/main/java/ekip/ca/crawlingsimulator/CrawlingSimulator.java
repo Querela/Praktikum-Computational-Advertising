@@ -256,7 +256,7 @@ public class CrawlingSimulator {
                         "utf-8"));
                 for (int i = 0; i < qualitySteps.length; i++) {
                     if (out_put_float_only_format) {
-                        writer.write(String.valueOf(qualitySteps[i]));
+                        writer.write(String.valueOf(qualitySteps[i]) + NL);
                     } else {
                         writer.write("Quality Step: " + String.valueOf(i) + " --> " + String.valueOf(qualitySteps[i])
                                 + NL);
