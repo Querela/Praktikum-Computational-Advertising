@@ -45,6 +45,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     protected PreparedStatement pstmt_select_all_from_url;
     protected PreparedStatement pstmt_select_was_page_visited;
     protected PreparedStatement pstmt_insert_page_visited;
+    protected PreparedStatement pstmt_insert_link_sources;
+    protected PreparedStatement pstmt_select_link_sources;
+    protected PreparedStatement pstmt_select_count_ingoing_links;
+    protected PreparedStatement pstmt_select_count_outgoing_links;
 
     protected List<WebPage> seedPages;
 
@@ -120,6 +124,8 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         Statement stmt = conn.createStatement();
         stmt.executeUpdate("DROP TABLE IF EXISTS pages_visited");
         stmt.executeUpdate("CREATE TABLE pages_visited (id BIGINT PRIMARY KEY)");
+        stmt.executeUpdate("DROP TABLE IF EXISTS temp_page_graph");
+        stmt.executeUpdate("CREATE TABLE temp_page_graph (source BIGINT, destination BIGINT)");
         stmt.close();
 
         // Check if empty db then create new tables
@@ -135,7 +141,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             log.debug("Create page and web graph tables ...");
             stmt = conn.createStatement();
             stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pages (id BIGINT AUTO_INCREMENT PRIMARY KEY, quality BOOLEAN DEFAULT FALSE, url VARCHAR(40) NOT NULL, UNIQUE KEY url_UNIQUE (url))");
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT(40))");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS relations (id1 BIGINT, id2 BIGINT)");
             // stmt.executeUpdate("CREATE UNIQUE HASH INDEX IF NOT EXISTS INDEX_pages_url ON pages(url)");
             stmt.executeUpdate("CREATE INDEX IF NOT EXISTS INDEX_relations ON relations(id1)");
             stmt.close();
@@ -157,6 +163,15 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
 
         pstmt_select_was_page_visited = conn.prepareStatement("SELECT TOP 1 * FROM pages_visited WHERE id = ?");
         pstmt_insert_page_visited = conn.prepareStatement("INSERT INTO pages_visited (id) VALUES (?)");
+
+        pstmt_insert_link_sources = conn
+                .prepareStatement("INSERT INTO temp_page_graph (source, destination) SELECT r.id1, r.id2 FROM relations AS r WHERE r.id1 = ?");
+        pstmt_select_link_sources = conn.prepareStatement("SELECT source FROM temp_page_graph WHERE destination = ?");
+
+        pstmt_select_count_ingoing_links = conn
+                .prepareStatement("SELECT COUNT(source) FROM temp_page_graph WHERE destination = ?");
+        pstmt_select_count_outgoing_links = conn
+                .prepareStatement("SELECT COUNT(r.id2) FROM relations AS r WHERE r.id1 = ?");
 
         // String[] types = { "TABLE", "SYSTEM TABLE" };
         //
@@ -198,6 +213,10 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                     pstmt_select_linked.close();
                     pstmt_select_was_page_visited.close();
                     pstmt_insert_page_visited.close();
+                    pstmt_insert_link_sources.close();
+                    pstmt_select_link_sources.close();
+                    pstmt_select_count_ingoing_links.close();
+                    pstmt_select_count_outgoing_links.close();
                 } catch (Exception e) {
                     log.error("Closing statements", e);
                 } // try-catch
@@ -477,6 +496,50 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             log.error("retrieve linked pages", e);
         } // try-catch
 
+        // insert crawled links into temporary web graph (for in-/out-going
+        // links)
+        try {
+            pstmt_insert_link_sources.setLong(1, page.getID());
+            pstmt_insert_link_sources.executeUpdate();
+        } catch (Exception e) {
+            log.error("Create crawl graph (insert links)");
+        } // try-catch
+
+        return pages;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * ekip.ca.crawlingsimulator.WebGraph#getLinkedWebPagesWhichReferenceToThisPage
+     * (ekip.ca.crawlingsimulator.WebPage)
+     */
+    @Override
+    public List<WebPage> getLinkedWebPagesWhichReferenceToThisPage(WebPage page) {
+        if (page == null) {
+            return Collections.emptyList();
+        } // if
+
+        List<WebPage> pages = new ArrayList<>();
+
+        try {
+            // Query all ids from in-linking pages
+            pstmt_select_link_sources.setLong(1, page.getID());
+            ResultSet rs = pstmt_select_link_sources.executeQuery();
+
+            while (rs.next()) {
+                // Retrieve each page for id
+                WebPage wp = fromID(rs.getLong(1));
+                if (wp != null) {
+                    pages.add(wp);
+                } // if
+            } // while
+            rs.close();
+        } catch (Exception e) {
+            log.error("retrieve linked pages (in-going)", e);
+        } // try-catch
+
         return pages;
     }
 
@@ -571,6 +634,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             private boolean _visited = false;
             private String _url = url;
             private int _quality = qual;
+            private int _outgoing = -1;
 
             @Override
             public void setVisited(boolean visited) {
@@ -659,9 +723,54 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             }
 
             @Override
+            public List<WebPage> getLinksToThisPages() {
+                return getLinkedWebPagesWhichReferenceToThisPage(this);
+            }
+
+            @Override
             public long getID() {
                 return _id;
             }
+
+            @Override
+            public int getInLinkCount() {
+                int ingoing = 0;
+
+                try {
+                    pstmt_select_count_ingoing_links.setLong(1, _id);
+                    ResultSet rs = pstmt_select_count_ingoing_links.executeQuery();
+                    if (rs.next()) {
+                        ingoing = rs.getInt(1);
+                    } // if
+                    rs.close();
+                } catch (Exception e) {
+                    log.error(e.getLocalizedMessage());
+                } // try-catch
+
+                return ingoing;
+            }
+
+            @Override
+            public int getOutLinkCount() {
+                if (_outgoing != -1) {
+                    return _outgoing;
+                } // if
+
+                try {
+                    pstmt_select_count_outgoing_links.setLong(1, _id);
+                    ResultSet rs = pstmt_select_count_outgoing_links.executeQuery();
+                    if (rs.next()) {
+                        _outgoing = rs.getInt(1);
+                    } // if
+                    rs.close();
+                } catch (Exception e) {
+                    log.error(e.getLocalizedMessage());
+                } // try-catch
+
+                return _outgoing;
+            }
+
         };
     }
+
 }

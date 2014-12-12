@@ -121,7 +121,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             Page p = new PageWrapper(wp, priority);
 
             // get site url
-            url = url.substring(0, url.indexOf('/'));
+            url = url.substring(0, url.lastIndexOf('/'));
 
             // Search for site or create new site
             // and add page to site

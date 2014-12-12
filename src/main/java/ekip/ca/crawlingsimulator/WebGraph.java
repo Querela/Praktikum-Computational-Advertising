@@ -42,6 +42,18 @@ public interface WebGraph {
     public List<WebPage> getLinkedWebPages(WebPage page);
 
     /**
+     * Returns the pages which link to the given page. (all in-going links of a
+     * page (which were crawled))
+     * <p/>
+     * Is for a smaller crawl graph!
+     * 
+     * @param page
+     *            page which is the destination of links from another page
+     * @return list of web pages which were linked to this page
+     */
+    public List<WebPage> getLinkedWebPagesWhichReferenceToThisPage(WebPage page);
+
+    /**
      * Set page automatically as visited if retrieved from web graph?<br />
      * Experimental ...
      * 

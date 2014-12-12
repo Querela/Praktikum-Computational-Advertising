@@ -36,6 +36,27 @@ public interface WebPage {
     public List<WebPage> getLinkedPages();
 
     /**
+     * Get pages that link to this page.
+     * 
+     * @return List of web pages
+     */
+    public List<WebPage> getLinksToThisPages();
+
+    /**
+     * Returns the number of in-going links. (links to this page)
+     * 
+     * @return int
+     */
+    public int getInLinkCount();
+
+    /**
+     * Returns the number of out-going links. (links on page)
+     * 
+     * @return int
+     */
+    public int getOutLinkCount();
+
+    /**
      * Has this page been visited/processed?
      * 
      * @return boolean
