@@ -1,6 +1,8 @@
-package ekip.ca.crawlingsimulator;
+package ekip.ca.crawlingsimulator.queue;
 
 import java.util.List;
+
+import ekip.ca.crawlingsimulator.WebPage;
 
 /**
  * Interface for an abstract crawling queue with a strategy for assigning
@@ -43,4 +45,9 @@ public interface CrawlingQueue {
      * @return long number of elements in queue
      */
     public long getNumberOfElements();
+
+    /**
+     * Updates the ordering of elements in the queue.
+     */
+    public void updateOrder();
 }

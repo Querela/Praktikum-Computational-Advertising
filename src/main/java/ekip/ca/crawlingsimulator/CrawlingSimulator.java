@@ -74,6 +74,9 @@ public class CrawlingSimulator {
     @Parameter(names = { "-c", "--num-urls-per-step" }, required = false, description = "Number of urls crawled per step.")
     protected Integer urls_per_step = 200;
 
+    @Parameter(names = { "-b", "--batch-update-queue" }, required = false, description = "Number of pages to be crawled before the queues are updated.")
+    protected Integer batch_size_for_queue_update = 100;
+
     @Parameter(names = { "-d", "--database-file" }, converter = FileConverter.class, required = true, description = "File to database.")
     protected File database_file = null;
 
