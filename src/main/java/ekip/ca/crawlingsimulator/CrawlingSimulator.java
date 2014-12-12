@@ -26,8 +26,9 @@ import ekip.ca.crawlingsimulator.queue.BackLinkCountPageLevelStrategy;
 import ekip.ca.crawlingsimulator.queue.CrawlingQueue;
 import ekip.ca.crawlingsimulator.queue.GeneralCrawlingQueue;
 import ekip.ca.crawlingsimulator.queue.MaxPagePrioritySiteLevelStrategy;
-import ekip.ca.crawlingsimulator.queue.MaxPriorityPageLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.OPICPageLevelStrategy;
 import ekip.ca.crawlingsimulator.queue.PageLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.RoundRobinSiteLevelStrategy;
 import ekip.ca.crawlingsimulator.queue.SiteLevelStrategy;
 
 /**
@@ -99,6 +100,9 @@ public class CrawlingSimulator {
 
     @Parameter(names = { "-f", "--output-format" }, arity = 1, description = "If true each line in output-file contains only quality value and no other format string.")
     protected boolean out_put_float_only_format = false;
+
+    @Parameter(names = { "-t", "--crawling-strategy" }, description = "Crawling strategy")
+    protected String crawling_strategy = "maxpagepriority-opic";
 
     /**
      * Empty constructor.
@@ -185,17 +189,46 @@ public class CrawlingSimulator {
         long startTime = System.currentTimeMillis();
         long lastStepDuration = 10000;
 
-        CrawlingQueue pcq = new GeneralCrawlingQueue(new SiteLevelStrategy.Factory() {
-            @Override
-            public SiteLevelStrategy get() {
-                return new MaxPagePrioritySiteLevelStrategy();
-            }
-        }, new PageLevelStrategy.Factory() {
-            @Override
-            public PageLevelStrategy get() {
-                return new BackLinkCountPageLevelStrategy();
-            }
-        });
+        SiteLevelStrategy.Factory sf = null;
+        PageLevelStrategy.Factory pf = null;
+
+        crawling_strategy = crawling_strategy.toLowerCase();
+
+        if (crawling_strategy.contains("roundrobing")) {
+            sf = new SiteLevelStrategy.Factory() {
+                @Override
+                public SiteLevelStrategy get() {
+                    return new RoundRobinSiteLevelStrategy();
+                }
+            };
+            // } else if (crawling_strategy.contains("maxpagepriority")) {
+        } else {
+            sf = new SiteLevelStrategy.Factory() {
+                @Override
+                public SiteLevelStrategy get() {
+                    return new MaxPagePrioritySiteLevelStrategy();
+                }
+            };
+        } // if-else
+
+        if (crawling_strategy.contains("backlink")) {
+            pf = new PageLevelStrategy.Factory() {
+                @Override
+                public PageLevelStrategy get() {
+                    return new BackLinkCountPageLevelStrategy();
+                }
+            };
+            // } else if (crawling_strategy.contains("opic")) {
+        } else {
+            pf = new PageLevelStrategy.Factory() {
+                @Override
+                public PageLevelStrategy get() {
+                    return new OPICPageLevelStrategy();
+                }
+            };
+        } // if-else
+
+        CrawlingQueue pcq = new GeneralCrawlingQueue(sf, pf);
         // PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
 
         Float[] qualitySteps = new Float[number_of_crawling_steps];
@@ -212,7 +245,7 @@ public class CrawlingSimulator {
             if ((i % batch_size_for_queue_update) == 0) {
                 long start = System.currentTimeMillis();
                 pcq.updateOrder();
-                log.debug("Reordering after {} steps took {} s", i, (System.currentTimeMillis() - start));
+                log.debug("Reordering after {} steps took {} s", i, (System.currentTimeMillis() - start) / 1000.f);
             } // if
 
             // Init local Ressources
