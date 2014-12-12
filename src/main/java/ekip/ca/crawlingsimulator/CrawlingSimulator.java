@@ -275,7 +275,7 @@ public class CrawlingSimulator {
             log.info("No quality steps recorded!");
         }
     }
-    
+
     /**
      * Runs the simulation
      * 
