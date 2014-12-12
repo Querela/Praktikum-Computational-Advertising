@@ -11,6 +11,7 @@ import ekip.ca.crawlingsimulator.WebPage;
 public interface Page {
     public WebPage getWebPage();
     public float getQuality();
-    public int getPriority();
+    public void setScore(float score);
+    public void addScore(float addScore);
     public float getScore();
 }

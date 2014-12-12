@@ -45,11 +45,9 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
 
     public static class PageWrapper implements Page {
         private WebPage wp;
-        private int priority;
 
-        public PageWrapper(WebPage wp, int priority) {
+        public PageWrapper(WebPage wp) {
             this.wp = wp;
-            this.priority = priority;
         }
 
         @Override
@@ -63,13 +61,18 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
         }
 
         @Override
-        public int getPriority() {
-            return priority;
+        public float getScore() {
+            return wp.getScore();
         }
 
         @Override
-        public float getScore() {
-            return getQuality();
+        public void setScore(float score) {
+            wp.setScore(score);
+        }
+
+        @Override
+        public void addScore(float addScore) {
+            wp.setScore(wp.getScore() + addScore);
         }
     }
 
@@ -110,34 +113,45 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     }
 
     @Override
-    public void addPages(List<WebPage> pages, int priority) {
+    public void addPages(List<WebPage> pages, int score) {
         if (pages == null) {
             return;
         } // if
 
         for (WebPage wp : pages) {
             String url = wp.getURL();
-            // create wrapper for queue
-            Page p = new PageWrapper(wp, priority);
 
             // get site url
-            url = url.substring(0, url.lastIndexOf('/'));
+            String domainUrl = url.substring(0, url.lastIndexOf('/'));
 
             // Search for site or create new site
             // and add page to site
             boolean found = false;
             for (Site site : sites) {
-                if (site.getUrl().equals(url)) {
-                    site.getPages().offer(p);
+                if (site.getUrl().equals(domainUrl)) {
+                    // check if already in queue?
+                    boolean alreadyThere = false;
+                    for (Page page : site.getPages()) {
+                        if (page.getWebPage().getID() == wp.getID()) {
+                            // TODO: add cash like in OPIC?
+
+                            alreadyThere = true;
+                            break;
+                        } // if
+                    } // for
+
+                    if (!alreadyThere) {
+                        site.getPages().offer(new PageWrapper(wp));
+                    } // if
                     found = true;
                     break;
                 } // if
             } // for
             if (!found) {
                 // add new site wrapper for queue with page
-                Site s = new SiteWrapper(url, pageFact.get());
+                Site s = new SiteWrapper(domainUrl, pageFact.get());
                 sites.offer(s);
-                s.getPages().offer(p);
+                s.getPages().offer(new PageWrapper(wp));
             } // if
         } // for
     }

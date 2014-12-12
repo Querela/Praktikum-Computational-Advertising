@@ -635,6 +635,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             private String _url = url;
             private int _quality = qual;
             private int _outgoing = -1;
+            private float _score = 0f;
 
             @Override
             public void setVisited(boolean visited) {
@@ -768,6 +769,16 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 } // try-catch
 
                 return _outgoing;
+            }
+
+            @Override
+            public float getScore() {
+                return _score;
+            }
+
+            @Override
+            public void setScore(float score) {
+                this._score = score;
             }
 
         };

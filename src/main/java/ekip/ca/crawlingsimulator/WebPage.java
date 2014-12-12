@@ -29,6 +29,21 @@ public interface WebPage {
     public int getQuality();
 
     /**
+     * Returns a score for this page.
+     * 
+     * @return float
+     */
+    public float getScore();
+
+    /**
+     * Sets a score for this page.
+     * 
+     * @param score
+     *            Float score to set
+     */
+    public void setScore(float score);
+
+    /**
      * Get pages this page links to.
      * 
      * @return List of web pages

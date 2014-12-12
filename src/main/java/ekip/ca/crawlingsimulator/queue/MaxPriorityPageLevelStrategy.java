@@ -17,7 +17,7 @@ public class MaxPriorityPageLevelStrategy implements PageLevelStrategy {
         public int compare(Page page1, Page page2) {
             int comparisonResult = 0;
 
-            comparisonResult = (page1.getPriority() - page2.getPriority());
+            comparisonResult = Float.compare(page1.getScore(), page2.getScore());
 
             if (comparisonResult == 0) {
                 comparisonResult = Float.compare(page1.getQuality(), page2.getQuality());
@@ -61,5 +61,4 @@ public class MaxPriorityPageLevelStrategy implements PageLevelStrategy {
     public Page getNext() {
         return pages.poll();
     }
-
 }

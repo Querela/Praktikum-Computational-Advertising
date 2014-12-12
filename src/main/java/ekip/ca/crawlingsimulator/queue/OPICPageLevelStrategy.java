@@ -16,29 +16,9 @@ public class OPICPageLevelStrategy implements PageLevelStrategy {
     private static Comparator<Page> pageComparator = new Comparator<Page>() {
         @Override
         public int compare(Page page1, Page page2) {
-            // TODO: ...
-
-            int comparisonResult = 0;
-
-            comparisonResult = (page1.getPriority() - page2.getPriority());
-
-            if (comparisonResult == 0) {
-                comparisonResult = Float.compare(page1.getQuality(), page2.getQuality());
-            } // if
-
-            // Normalize equality
-            comparisonResult = (comparisonResult < 0) ? -1 : (comparisonResult > 0) ? 1 : 0;
-
-            return comparisonResult;
+            return Float.compare(page1.getScore(), page2.getScore());
         }
     };
-
-    /**
-     * 
-     */
-    public OPICPageLevelStrategy() {
-        // TODO Auto-generated constructor stub
-    }
 
     /*
      * (non-Javadoc)
@@ -59,8 +39,6 @@ public class OPICPageLevelStrategy implements PageLevelStrategy {
      */
     @Override
     public void reOrder() {
-        // TODO Auto-generated method stub
-
         Collections.sort(pages, pageComparator);
     }
 
@@ -73,5 +51,4 @@ public class OPICPageLevelStrategy implements PageLevelStrategy {
     public Page getNext() {
         return pages.poll();
     }
-
 }

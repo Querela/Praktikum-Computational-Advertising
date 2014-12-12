@@ -22,6 +22,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
+import ekip.ca.crawlingsimulator.queue.BackLinkCountPageLevelStrategy;
 import ekip.ca.crawlingsimulator.queue.CrawlingQueue;
 import ekip.ca.crawlingsimulator.queue.GeneralCrawlingQueue;
 import ekip.ca.crawlingsimulator.queue.MaxPagePrioritySiteLevelStrategy;
@@ -192,7 +193,7 @@ public class CrawlingSimulator {
         }, new PageLevelStrategy.Factory() {
             @Override
             public PageLevelStrategy get() {
-                return new MaxPriorityPageLevelStrategy();
+                return new BackLinkCountPageLevelStrategy();
             }
         });
         // PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
@@ -201,7 +202,7 @@ public class CrawlingSimulator {
         int documents = 0;
         int goodDocuments = 0;
         // Adding Seeds to Queue with Priority
-        pcq.addPages(wg.getSeedWebPages(), 20);
+        pcq.addPages(wg.getSeedWebPages(), 10);
         log.info("Seeds in Queue: {}", pcq.getNumberOfElements());
         log.info("Initialize of Ressources done!");
 
@@ -249,6 +250,8 @@ public class CrawlingSimulator {
                 // rufe passende Funktion in WebGraph
                 // 4.Step insert found links in Queue
                 List<WebPage> linkedPages = wg.getLinkedWebPages(page);
+
+                // Filter visited pages
                 List<WebPage> linkedPagesPassToQueue = new ArrayList<>();
                 for (WebPage isInDB : linkedPages) {
                     // make look up if page was already crawled
@@ -256,7 +259,14 @@ public class CrawlingSimulator {
                         linkedPagesPassToQueue.add(isInDB);
                     }
                 }
-                pcq.addPages(linkedPagesPassToQueue, 10);
+
+                // OPIC
+                float score = page.getScore() / linkedPagesPassToQueue.size();
+                for (WebPage w : linkedPagesPassToQueue) {
+                    w.setScore(w.getScore() + score);
+                } // for
+
+                pcq.addPages(linkedPagesPassToQueue, 0);
             }
 
             if (documents == 0 && pcq.getNumberOfElements() == 0) {
