@@ -22,6 +22,13 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
+import ekip.ca.crawlingsimulator.queue.CrawlingQueue;
+import ekip.ca.crawlingsimulator.queue.GeneralCrawlingQueue;
+import ekip.ca.crawlingsimulator.queue.MaxPagePrioritySiteLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.MaxPriorityPageLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.PageLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.SiteLevelStrategy;
+
 /**
  * Crawling simulator for a web graph.
  * 
@@ -176,7 +183,20 @@ public class CrawlingSimulator {
         // Init Ressources
         long startTime = System.currentTimeMillis();
         long lastStepDuration = 10000;
-        PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
+
+        CrawlingQueue pcq = new GeneralCrawlingQueue(new SiteLevelStrategy.Factory() {
+            @Override
+            public SiteLevelStrategy get() {
+                return new MaxPagePrioritySiteLevelStrategy();
+            }
+        }, new PageLevelStrategy.Factory() {
+            @Override
+            public PageLevelStrategy get() {
+                return new MaxPriorityPageLevelStrategy();
+            }
+        });
+        // PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
+
         Float[] qualitySteps = new Float[number_of_crawling_steps];
         int documents = 0;
         int goodDocuments = 0;
@@ -187,6 +207,13 @@ public class CrawlingSimulator {
 
         // do crawling
         for (int i = 0; i < number_of_crawling_steps; i++) {
+            // Check if reordering is required
+            if ((i % batch_size_for_queue_update) == 0) {
+                long start = System.currentTimeMillis();
+                pcq.updateOrder();
+                log.debug("Reordering after {} steps took {} s", i, (System.currentTimeMillis() - start));
+            } // if
+
             // Init local Ressources
             long timeStartLoop = System.currentTimeMillis();
 
