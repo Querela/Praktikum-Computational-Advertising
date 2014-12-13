@@ -107,9 +107,16 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     @Override
     public WebPage getNextPage() {
         // get next site
-        // get next page from site
-        // unwrap
-        return siteStrategy.getNext().getStrategy().getNext().getWebPage();
+        Site site = siteStrategy.getNext();
+        if (site != null) {
+            // get next page from site
+            Page page = site.getStrategy().getNext();
+            if (page != null) {
+                // unwrap
+                return page.getWebPage();
+            } // if
+        } // if
+        return null;
     }
 
     @Override

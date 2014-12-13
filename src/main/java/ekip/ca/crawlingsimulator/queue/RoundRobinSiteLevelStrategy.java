@@ -48,7 +48,20 @@ public class RoundRobinSiteLevelStrategy implements SiteLevelStrategy {
             positionInList = 0;
         } // if
 
-        return sites.get(positionInList);
+        // abort recursion
+        if (sites.size() == 0) {
+            return null;
+        } // if
+
+        Site site = sites.get(positionInList);
+        if (site.getPages().size() == 0) {
+            sites.remove(site);
+
+            // do recursive until empty
+            site = getNext();
+        } // if
+
+        return site;
     }
 
 }
