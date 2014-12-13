@@ -114,6 +114,9 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
 
     @Override
     public void addPages(List<WebPage> pages, int score) {
+        // Score will be ignored ...
+        // TODO: todo?
+
         if (pages == null) {
             return;
         } // if

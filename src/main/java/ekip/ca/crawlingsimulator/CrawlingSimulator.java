@@ -194,7 +194,8 @@ public class CrawlingSimulator {
 
         crawling_strategy = crawling_strategy.toLowerCase();
 
-        if (crawling_strategy.contains("roundrobing")) {
+        if (crawling_strategy.contains("roundrobin")) {
+            log.info("SiteLevelStrategy: RoundRobin");
             sf = new SiteLevelStrategy.Factory() {
                 @Override
                 public SiteLevelStrategy get() {
@@ -203,6 +204,7 @@ public class CrawlingSimulator {
             };
             // } else if (crawling_strategy.contains("maxpagepriority")) {
         } else {
+            log.info("SiteLevelStrategy: MaxPagePriority");
             sf = new SiteLevelStrategy.Factory() {
                 @Override
                 public SiteLevelStrategy get() {
@@ -211,7 +213,9 @@ public class CrawlingSimulator {
             };
         } // if-else
 
+        boolean isOPIC = false;
         if (crawling_strategy.contains("backlink")) {
+            log.info("PageLevelStrategy: BacklinkCount");
             pf = new PageLevelStrategy.Factory() {
                 @Override
                 public PageLevelStrategy get() {
@@ -220,6 +224,8 @@ public class CrawlingSimulator {
             };
             // } else if (crawling_strategy.contains("opic")) {
         } else {
+            log.info("PageLevelStrategy: OPIC");
+            isOPIC = true;
             pf = new PageLevelStrategy.Factory() {
                 @Override
                 public PageLevelStrategy get() {
@@ -294,10 +300,12 @@ public class CrawlingSimulator {
                 }
 
                 // OPIC
-                float score = page.getScore() / linkedPagesPassToQueue.size();
-                for (WebPage w : linkedPagesPassToQueue) {
-                    w.setScore(w.getScore() + score);
-                } // for
+                if (isOPIC) {
+                    float score = page.getScore() / linkedPagesPassToQueue.size();
+                    for (WebPage w : linkedPagesPassToQueue) {
+                        w.setScore(w.getScore() + score);
+                    } // for
+                } // if
 
                 pcq.addPages(linkedPagesPassToQueue, 0);
             }

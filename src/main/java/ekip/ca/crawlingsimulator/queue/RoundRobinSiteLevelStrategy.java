@@ -44,7 +44,7 @@ public class RoundRobinSiteLevelStrategy implements SiteLevelStrategy {
         // goto next position
         positionInList++;
         // if at end then goto null
-        if (positionInList > sites.size()) {
+        if (positionInList >= sites.size()) {
             positionInList = 0;
         } // if
 
