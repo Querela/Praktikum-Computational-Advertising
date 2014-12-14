@@ -245,13 +245,6 @@ public class CrawlingSimulator {
 
         // do crawling
         for (int i = 0; i < number_of_crawling_steps; i++) {
-            // Check if reordering is required
-            if ((i % batch_size_for_queue_update) == 0) {
-                long start = System.currentTimeMillis();
-                pcq.updateOrder();
-                log.debug("Reordering after {} steps took {} s", i, (System.currentTimeMillis() - start) / 1000.f);
-            } // if
-
             // Init local Ressources
             long timeStartLoop = System.currentTimeMillis();
 
@@ -298,6 +291,14 @@ public class CrawlingSimulator {
                 }
 
                 pcq.addPages(page, linkedPagesPassToQueue, 0);
+
+                // Check if reordering is required
+                if ((documents % batch_size_for_queue_update) == 0) {
+                    long start = System.currentTimeMillis();
+                    pcq.updateOrder();
+                    log.debug("Reordering after {} documents took {}", documents,
+                            Progress.longToTimeEx(System.currentTimeMillis() - start));
+                } // if
             }
 
             if (documents == 0 && pcq.getNumberOfElements() == 0) {
@@ -305,13 +306,13 @@ public class CrawlingSimulator {
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
             } else {
                 float qualityCrawl = (float) goodDocuments / (float) documents;
-                log.debug("Calced Quality: {}", qualityCrawl);
+                log.info("Calced Quality: {}", qualityCrawl);
                 log.debug("goodDocuments: {}", goodDocuments);
                 log.debug("documents: {}", documents);
                 if (i < qualitySteps.length) {
                     qualitySteps[i] = qualityCrawl;
                 } else {
-                    log.info("Array index error!");
+                    log.warn("Array index error!");
                 }
             }
             // calc time for each step
