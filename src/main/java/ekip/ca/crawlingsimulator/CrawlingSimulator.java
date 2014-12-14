@@ -238,7 +238,7 @@ public class CrawlingSimulator {
         Float[] qualitySteps = new Float[number_of_crawling_steps];
         int documents = 0;
         int goodDocuments = 0;
-        // Adding Seeds to Queue with Priority
+        // Adding Seeds to Queue with Cash
         pcq.addPages(null, wg.getSeedWebPages(), 10);
         log.info("Seeds in Queue: {}", pcq.getNumberOfElements());
         log.info("Initialize of Ressources done!");
