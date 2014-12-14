@@ -124,8 +124,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         Statement stmt = conn.createStatement();
         stmt.executeUpdate("DROP TABLE IF EXISTS pages_visited");
         stmt.executeUpdate("CREATE TABLE pages_visited (id BIGINT PRIMARY KEY)");
+
+        stmt.executeUpdate("DROP INDEX IF EXISTS INDEX_temp_page_graph_dest");
         stmt.executeUpdate("DROP TABLE IF EXISTS temp_page_graph");
         stmt.executeUpdate("CREATE TABLE temp_page_graph (source BIGINT, destination BIGINT)");
+        stmt.executeUpdate("CREATE INDEX IF NOT EXISTS INDEX_temp_page_graph_dest ON temp_page_graph(destination)");
         stmt.close();
 
         // Check if empty db then create new tables

@@ -213,7 +213,6 @@ public class CrawlingSimulator {
             };
         } // if-else
 
-        boolean isOPIC = false;
         if (crawling_strategy.contains("backlink")) {
             log.info("PageLevelStrategy: BacklinkCount");
             pf = new PageLevelStrategy.Factory() {
@@ -225,7 +224,6 @@ public class CrawlingSimulator {
             // } else if (crawling_strategy.contains("opic")) {
         } else {
             log.info("PageLevelStrategy: OPIC");
-            isOPIC = true;
             pf = new PageLevelStrategy.Factory() {
                 @Override
                 public PageLevelStrategy get() {
@@ -241,7 +239,7 @@ public class CrawlingSimulator {
         int documents = 0;
         int goodDocuments = 0;
         // Adding Seeds to Queue with Priority
-        pcq.addPages(wg.getSeedWebPages(), 10);
+        pcq.addPages(null, wg.getSeedWebPages(), 10);
         log.info("Seeds in Queue: {}", pcq.getNumberOfElements());
         log.info("Initialize of Ressources done!");
 
@@ -299,15 +297,7 @@ public class CrawlingSimulator {
                     }
                 }
 
-                // OPIC
-                if (isOPIC) {
-                    float score = page.getScore() / linkedPagesPassToQueue.size();
-                    for (WebPage w : linkedPagesPassToQueue) {
-                        w.setScore(w.getScore() + score);
-                    } // for
-                } // if
-
-                pcq.addPages(linkedPagesPassToQueue, 0);
+                pcq.addPages(page, linkedPagesPassToQueue, 0);
             }
 
             if (documents == 0 && pcq.getNumberOfElements() == 0) {

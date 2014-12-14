@@ -50,6 +50,11 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             this.wp = wp;
         }
 
+        public PageWrapper(WebPage wp, float score) {
+            this.wp = wp;
+            this.setScore(score);
+        }
+
         @Override
         public WebPage getWebPage() {
             return wp;
@@ -120,16 +125,32 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     }
 
     @Override
-    public void addPages(List<WebPage> pages, int score) {
-        // Score will be ignored ...
-        // TODO: todo?
-
+    public void addPages(WebPage sourcePage, List<WebPage> pages, int score) {
         if (pages == null) {
             return;
         } // if
 
+        boolean isOPIC = pageFact instanceof OPICPageLevelStrategy;
+        boolean isBacklinkCount = pageFact instanceof BackLinkCountPageLevelStrategy;
+
+        if (isOPIC) {
+            float scoreToAssign = sourcePage.getScore() / pages.size();
+            for (WebPage page : pages) {
+                page.setScore(page.getScore() + scoreToAssign);
+            } // for
+        } // if
+
         for (WebPage wp : pages) {
             String url = wp.getURL();
+
+            Page page = null;
+            if (isBacklinkCount) {
+                page = new PageWrapper(wp, wp.getInLinkCount());
+            } else if (!isOPIC) {
+                page = new PageWrapper(wp, score);
+            } else {
+                page = new PageWrapper(wp);
+            } // if-else
 
             // get site url
             String domainUrl = url.substring(0, url.lastIndexOf('/'));
@@ -141,9 +162,12 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
                 if (site.getUrl().equals(domainUrl)) {
                     // check if already in queue?
                     boolean alreadyThere = false;
-                    for (Page page : site.getPages()) {
-                        if (page.getWebPage().getID() == wp.getID()) {
-                            // TODO: add cash like in OPIC?
+                    for (Page pageInner : site.getPages()) {
+                        if (pageInner.getWebPage().getID() == wp.getID()) {
+                            // Refresh backlink count for existing pages
+                            if (isBacklinkCount) {
+                                pageInner.setScore(pageInner.getWebPage().getInLinkCount());
+                            } // if
 
                             alreadyThere = true;
                             break;
@@ -151,7 +175,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
                     } // for
 
                     if (!alreadyThere) {
-                        site.getPages().offer(new PageWrapper(wp));
+                        site.getPages().offer(page);
                     } // if
                     found = true;
                     break;
@@ -161,7 +185,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
                 // add new site wrapper for queue with page
                 Site s = new SiteWrapper(domainUrl, pageFact.get());
                 sites.offer(s);
-                s.getPages().offer(new PageWrapper(wp));
+                s.getPages().offer(page);
             } // if
         } // for
     }
