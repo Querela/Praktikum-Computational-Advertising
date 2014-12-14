@@ -31,9 +31,12 @@ local.properties
 backup/
 logs/
 out.txt
+log.txt
 
 # Properties
 *.properties
 params
 *.db
 *.png
+ekip_PCA*.zip
+

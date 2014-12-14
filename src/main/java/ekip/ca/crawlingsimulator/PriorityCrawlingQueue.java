@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import ekip.ca.crawlingsimulator.queue.CrawlingQueue;
+
 public class PriorityCrawlingQueue implements CrawlingQueue {
     protected WebGraph webGraph;
 
@@ -91,10 +93,16 @@ public class PriorityCrawlingQueue implements CrawlingQueue {
     }
 
     @Override
-    public void addPages(List<WebPage> pages, int priority) {
+    public void addPages(WebPage sourcePage, List<WebPage> pages, int priority) {
         for (WebPage page : pages) {
             queue.offer(new PriorityPage(page.getID(), page.getQuality(), priority));
         } // for
+    }
+
+    @Override
+    public void updateOrder() {
+        // TODO Auto-generated method stub
+        
     }
 
 }

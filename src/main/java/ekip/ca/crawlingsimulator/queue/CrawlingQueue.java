@@ -1,6 +1,8 @@
-package ekip.ca.crawlingsimulator;
+package ekip.ca.crawlingsimulator.queue;
 
 import java.util.List;
+
+import ekip.ca.crawlingsimulator.WebPage;
 
 /**
  * Interface for an abstract crawling queue with a strategy for assigning
@@ -30,12 +32,14 @@ public interface CrawlingQueue {
      * List of web pages will be added in order of given list. Priority queue
      * should have a stable sort!
      * 
+     * @param sourcePage
+     *            source page for the pages that were linked to
      * @param pages
      *            list of web pages to add to the queue
      * @param priority
      *            priority for each web page
      */
-    public void addPages(List<WebPage> pages, int priority);
+    public void addPages(WebPage sourcePage, List<WebPage> pages, int priority);
 
     /**
      * Returns the number of elements in the queue.
@@ -43,4 +47,9 @@ public interface CrawlingQueue {
      * @return long number of elements in queue
      */
     public long getNumberOfElements();
+
+    /**
+     * Updates the ordering of elements in the queue.
+     */
+    public void updateOrder();
 }

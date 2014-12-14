@@ -22,6 +22,15 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
+import ekip.ca.crawlingsimulator.queue.BackLinkCountPageLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.CrawlingQueue;
+import ekip.ca.crawlingsimulator.queue.GeneralCrawlingQueue;
+import ekip.ca.crawlingsimulator.queue.MaxPagePrioritySiteLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.OPICPageLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.PageLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.RoundRobinSiteLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.SiteLevelStrategy;
+
 /**
  * Crawling simulator for a web graph.
  * 
@@ -74,6 +83,9 @@ public class CrawlingSimulator {
     @Parameter(names = { "-c", "--num-urls-per-step" }, required = false, description = "Number of urls crawled per step.")
     protected Integer urls_per_step = 200;
 
+    @Parameter(names = { "-b", "--batch-update-queue" }, required = false, description = "Number of pages to be crawled before the queues are updated.")
+    protected Integer batch_size_for_queue_update = 100;
+
     @Parameter(names = { "-d", "--database-file" }, converter = FileConverter.class, required = true, description = "File to database.")
     protected File database_file = null;
 
@@ -88,6 +100,9 @@ public class CrawlingSimulator {
 
     @Parameter(names = { "-f", "--output-format" }, arity = 1, description = "If true each line in output-file contains only quality value and no other format string.")
     protected boolean out_put_float_only_format = false;
+
+    @Parameter(names = { "-t", "--crawling-strategy" }, description = "Crawling strategy")
+    protected String crawling_strategy = "maxpagepriority-opic";
 
     /**
      * Empty constructor.
@@ -173,17 +188,70 @@ public class CrawlingSimulator {
         // Init Ressources
         long startTime = System.currentTimeMillis();
         long lastStepDuration = 10000;
-        PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
+
+        SiteLevelStrategy.Factory sf = null;
+        PageLevelStrategy.Factory pf = null;
+
+        crawling_strategy = crawling_strategy.toLowerCase();
+
+        if (crawling_strategy.contains("roundrobin")) {
+            log.info("SiteLevelStrategy: RoundRobin");
+            sf = new SiteLevelStrategy.Factory() {
+                @Override
+                public SiteLevelStrategy get() {
+                    return new RoundRobinSiteLevelStrategy();
+                }
+            };
+            // } else if (crawling_strategy.contains("maxpagepriority")) {
+        } else {
+            log.info("SiteLevelStrategy: MaxPagePriority");
+            sf = new SiteLevelStrategy.Factory() {
+                @Override
+                public SiteLevelStrategy get() {
+                    return new MaxPagePrioritySiteLevelStrategy();
+                }
+            };
+        } // if-else
+
+        if (crawling_strategy.contains("backlink")) {
+            log.info("PageLevelStrategy: BacklinkCount");
+            pf = new PageLevelStrategy.Factory() {
+                @Override
+                public PageLevelStrategy get() {
+                    return new BackLinkCountPageLevelStrategy();
+                }
+            };
+            // } else if (crawling_strategy.contains("opic")) {
+        } else {
+            log.info("PageLevelStrategy: OPIC");
+            pf = new PageLevelStrategy.Factory() {
+                @Override
+                public PageLevelStrategy get() {
+                    return new OPICPageLevelStrategy();
+                }
+            };
+        } // if-else
+
+        CrawlingQueue pcq = new GeneralCrawlingQueue(sf, pf);
+        // PriorityCrawlingQueue pcq = new PriorityCrawlingQueue(wg);
+
         Float[] qualitySteps = new Float[number_of_crawling_steps];
         int documents = 0;
         int goodDocuments = 0;
         // Adding Seeds to Queue with Priority
-        pcq.addPages(wg.getSeedWebPages(), 20);
+        pcq.addPages(null, wg.getSeedWebPages(), 10);
         log.info("Seeds in Queue: {}", pcq.getNumberOfElements());
         log.info("Initialize of Ressources done!");
 
         // do crawling
         for (int i = 0; i < number_of_crawling_steps; i++) {
+            // Check if reordering is required
+            if ((i % batch_size_for_queue_update) == 0) {
+                long start = System.currentTimeMillis();
+                pcq.updateOrder();
+                log.debug("Reordering after {} steps took {} s", i, (System.currentTimeMillis() - start) / 1000.f);
+            } // if
+
             // Init local Ressources
             long timeStartLoop = System.currentTimeMillis();
 
@@ -219,6 +287,8 @@ public class CrawlingSimulator {
                 // rufe passende Funktion in WebGraph
                 // 4.Step insert found links in Queue
                 List<WebPage> linkedPages = wg.getLinkedWebPages(page);
+
+                // Filter visited pages
                 List<WebPage> linkedPagesPassToQueue = new ArrayList<>();
                 for (WebPage isInDB : linkedPages) {
                     // make look up if page was already crawled
@@ -226,7 +296,8 @@ public class CrawlingSimulator {
                         linkedPagesPassToQueue.add(isInDB);
                     }
                 }
-                pcq.addPages(linkedPagesPassToQueue, 10);
+
+                pcq.addPages(page, linkedPagesPassToQueue, 0);
             }
 
             if (documents == 0 && pcq.getNumberOfElements() == 0) {
