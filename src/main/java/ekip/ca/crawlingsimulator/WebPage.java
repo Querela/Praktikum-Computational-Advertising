@@ -22,6 +22,13 @@ public interface WebPage {
     public String getURL();
 
     /**
+     * Domain-URL of this web page
+     * 
+     * @return String
+     */
+    public String getDomain();
+
+    /**
      * Quality of this page (good 1 or bad 0)
      * 
      * @return int

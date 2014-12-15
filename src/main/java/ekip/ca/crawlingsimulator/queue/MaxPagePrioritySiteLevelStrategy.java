@@ -9,7 +9,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 /**
- * @author Erik Körner
+ * A site level strategy for ordering sites according to the accumulated score
+ * of their pages.
  */
 public class MaxPagePrioritySiteLevelStrategy implements SiteLevelStrategy {
     private LinkedList<Site> sites;
@@ -37,6 +38,13 @@ public class MaxPagePrioritySiteLevelStrategy implements SiteLevelStrategy {
         Comparator<Site> siteComparator = new Comparator<Site>() {
             private HashMap<Site, Float> scoreMapping = new HashMap<>();
 
+            /**
+             * Computes the score of a page.
+             * 
+             * @param site
+             *            Site with pages with scores
+             * @return float
+             */
             private float computeScore(Site site) {
                 float score = 0f;
 
@@ -48,6 +56,12 @@ public class MaxPagePrioritySiteLevelStrategy implements SiteLevelStrategy {
                 return score;
             }
 
+            /**
+             * Prepares the score of the to pages to compare.
+             * 
+             * @param site1
+             * @param site2
+             */
             private void prepareScores(Site site1, Site site2) {
                 // compute scores and cache them
                 if (!scoreMapping.containsKey(site1)) {

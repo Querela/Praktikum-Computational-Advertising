@@ -10,15 +10,29 @@ import java.util.List;
 import ekip.ca.crawlingsimulator.WebPage;
 
 /**
- * @author Erik Körner
+ * Represents a general crawling queue for two-level queuing. The fist level are
+ * the sites (domains) and the second are the contained pages within. It can be
+ * used with different crawling strategies.
  */
 public class GeneralCrawlingQueue implements CrawlingQueue {
 
+    /**
+     * Simple site wrapper implementation according to its interface.
+     */
     public static class SiteWrapper implements Site {
         private String url;
         private LinkedList<Page> pages;
         private PageLevelStrategy pageStrategy;
 
+        /**
+         * Constructor.
+         * 
+         * @param url
+         *            Domain-URL of the site
+         * @param strategy
+         *            {@link PageLevelStrategy} for ordering the pages within a
+         *            site.
+         */
         public SiteWrapper(String url, PageLevelStrategy strategy) {
             this.url = url;
             this.pages = new LinkedList<>();
@@ -43,6 +57,9 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
         }
     }
 
+    /**
+     * Simple page wrapper for web pages according to the interface.
+     */
     public static class PageWrapper implements Page {
         private WebPage wp;
 
@@ -86,6 +103,15 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     private PageLevelStrategy.Factory pageFact;
     private SiteLevelStrategy siteStrategy;
 
+    /**
+     * Constructor.
+     * 
+     * @param siteFact
+     *            {@link SiteLevelStrategy} the strategy for ordering sites
+     * @param pageFact
+     *            {@link PageLevelStrategy} the strategy for ordering pages
+     *            within their sites
+     */
     public GeneralCrawlingQueue(SiteLevelStrategy.Factory siteFact, PageLevelStrategy.Factory pageFact) {
         this.sites = new LinkedList<>();
         this.siteFact = siteFact;
@@ -130,10 +156,13 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             return;
         } // if
 
+        // Different logic for different scoring models according to the page
+        // level strategy.
         boolean isOPIC = pageFact instanceof OPICPageLevelStrategy;
         boolean isBacklinkCount = pageFact instanceof BackLinkCountPageLevelStrategy;
 
         if (isOPIC) {
+            // distribute score to its child
             float scoreToAssign = sourcePage.getScore() / pages.size();
             for (WebPage page : pages) {
                 page.setScore(page.getScore() + scoreToAssign);
@@ -144,6 +173,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             String url = wp.getURL();
 
             Page page = null;
+            // decide what the score represents
             if (isBacklinkCount) {
                 page = new PageWrapper(wp, wp.getInLinkCount());
             } else if (!isOPIC) {
@@ -153,7 +183,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             } // if-else
 
             // get site url
-            String domainUrl = url.substring(0, url.lastIndexOf('/'));
+            String domainUrl = url.substring(0, url.lastIndexOf('/')); // wp.getDomain();
 
             // Search for site or create new site
             // and add page to site

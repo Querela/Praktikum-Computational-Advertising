@@ -6,7 +6,7 @@ import ekip.ca.crawlingsimulator.WebPage;
 
 /**
  * Interface for an abstract crawling queue with a strategy for assigning
- * priorities.
+ * priorities/scores/values.
  */
 public interface CrawlingQueue {
     /**

@@ -8,6 +8,9 @@ import java.util.Comparator;
 import java.util.LinkedList;
 
 /**
+ * A simple strategy for comparing pages according to their score and then
+ * quality.
+ * 
  * @author Erik Körner
  */
 public class MaxPriorityPageLevelStrategy implements PageLevelStrategy {
