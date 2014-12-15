@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 /**
+ * A page level strategy that uses the in-links of pages to provide a score.
+ * 
  * @author Erik Körner
  * @author Immanuel Plath
  */

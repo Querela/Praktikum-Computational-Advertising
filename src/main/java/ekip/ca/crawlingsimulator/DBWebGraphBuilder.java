@@ -717,6 +717,11 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             }
 
             @Override
+            public String getDomain() {
+                return getURL().substring(0, getURL().indexOf('/', 10));
+            }
+
+            @Override
             public int getQuality() {
                 return _quality;
             }
@@ -783,7 +788,6 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             public void setScore(float score) {
                 this._score = score;
             }
-
         };
     }
 

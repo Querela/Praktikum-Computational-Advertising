@@ -6,7 +6,8 @@ package ekip.ca.crawlingsimulator.queue;
 import java.util.LinkedList;
 
 /**
- * @author Erik Körner
+ * A simple strategy that selects always the next site from the queue/list. If
+ * it reaches the end it will start from the beginning.
  */
 public class RoundRobinSiteLevelStrategy implements SiteLevelStrategy {
     private LinkedList<Site> sites;

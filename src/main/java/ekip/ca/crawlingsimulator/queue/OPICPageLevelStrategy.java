@@ -8,6 +8,9 @@ import java.util.Comparator;
 import java.util.LinkedList;
 
 /**
+ * A strategy that distributes cash from the source page to its child pages.
+ * Only the ordering ...
+ * 
  * @author Erik Körner
  * @author Immanuel Plath
  */
