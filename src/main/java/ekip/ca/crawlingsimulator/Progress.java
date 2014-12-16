@@ -105,7 +105,7 @@ public class Progress {
             sb.append(millis).append(" msec ");
         } // if
 
-        return sb.deleteCharAt(sb.lastIndexOf(" ")).toString();
+        return sb.toString().trim();
     }
 
     private final long start;
