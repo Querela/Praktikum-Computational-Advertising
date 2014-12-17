@@ -166,11 +166,13 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
         } // if
 
         if (isOPIC) {
-            // distribute score to its child
-            float scoreToAssign = sourcePage.getScore() / pages.size();
-            for (WebPage page : pages) {
-                page.setScore(page.getScore() + scoreToAssign);
-            } // for
+            if (sourcePage != null) {
+                // distribute score to its child
+                float scoreToAssign = sourcePage.getScore() / pages.size();
+                for (WebPage page : pages) {
+                    page.setScore(page.getScore() + scoreToAssign);
+                } // for
+            } // if
         } // if
 
         for (WebPage wp : pages) {
