@@ -51,6 +51,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
     protected PreparedStatement pstmt_select_count_outgoing_links;
 
     protected List<WebPage> seedPages;
+    protected boolean createCrawlGraph;
 
     /**
      * Create a new DBWebGraphBuilder.
@@ -64,6 +65,7 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
         this.show_progress = show_progress;
         this.discard_database = discard_database;
         this.seedPages = new ArrayList<>();
+        this.createCrawlGraph = true;
     }
 
     /**
@@ -231,6 +233,28 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
                 } // try-catch
             }
         });
+    }
+
+    /**
+     * Can activate the ability to create a crawl graph each time child pages
+     * are queries. Can then be used to query in-going links to a web page.
+     * 
+     * @param createCrawlGraph
+     *            boolean, set true if crawl graph is to be generated
+     */
+    public void setCreateCrawlGraph(boolean createCrawlGraph) {
+        this.createCrawlGraph = createCrawlGraph;
+    }
+
+    /**
+     * Returns true if a crawl graph is being generated.
+     * <p/>
+     * Default is true! (May be deactivated to speed up the process.)
+     * 
+     * @return boolean
+     */
+    public boolean getCreateCrawlGraph() {
+        return createCrawlGraph;
     }
 
     /*
@@ -499,27 +523,36 @@ public class DBWebGraphBuilder implements WebGraph, WebGraphBuilder {
             log.error("retrieve linked pages", e);
         } // try-catch
 
-        // insert crawled links into temporary web graph (for in-/out-going
-        // links)
-        try {
-            pstmt_insert_link_sources.setLong(1, page.getID());
-            pstmt_insert_link_sources.executeUpdate();
-        } catch (Exception e) {
-            log.error("Create crawl graph (insert links)");
-        } // try-catch
+        if (createCrawlGraph) {
+            // insert crawled links into temporary web graph (for in-/out-going
+            // links)
+            try {
+                pstmt_insert_link_sources.setLong(1, page.getID());
+                pstmt_insert_link_sources.executeUpdate();
+            } catch (Exception e) {
+                log.error("Create crawl graph (insert links)");
+            } // try-catch
+        } // if
 
         return pages;
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * Warning. If no crawl graph is being generated an empty list is always
+     * returned and a warning issued. See 'See Also'. :-)
      * 
-     * @see
-     * ekip.ca.crawlingsimulator.WebGraph#getLinkedWebPagesWhichReferenceToThisPage
-     * (ekip.ca.crawlingsimulator.WebPage)
+     * @see ekip.ca.crawlingsimulator.DBWebGraphBuilder#setCreateCrawlGraph(boolean)
+     * @see ekip.ca.crawlingsimulator.WebGraph#getLinkedWebPagesWhichReferenceToThisPage
+     *      (ekip.ca.crawlingsimulator.WebPage)
      */
     @Override
     public List<WebPage> getLinkedWebPagesWhichReferenceToThisPage(WebPage page) {
+        if (!createCrawlGraph) {
+            // Can't return inlinks if no crawl graph was generated!
+            log.warn("No crawl graph generated. Can't return in-links! Check program!");
+            return Collections.emptyList();
+        } // if
+
         if (page == null) {
             return Collections.emptyList();
         } // if

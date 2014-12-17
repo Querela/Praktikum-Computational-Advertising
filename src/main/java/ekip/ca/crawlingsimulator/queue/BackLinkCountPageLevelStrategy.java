@@ -42,10 +42,10 @@ public class BackLinkCountPageLevelStrategy implements PageLevelStrategy {
             private void prepareLinkCount(Page page1, Page page2) {
                 // cache ingoing links
                 if (!linkCountMapping.containsKey(page1)) {
-                    linkCountMapping.put(page1, page1.getWebPage().getInLinkCount());
+                    linkCountMapping.put(page1, (int) page1.getScore());
                 } // if
                 if (!linkCountMapping.containsKey(page2)) {
-                    linkCountMapping.put(page2, page2.getWebPage().getInLinkCount());
+                    linkCountMapping.put(page2, (int) page2.getScore());
                 } // if
             }
 

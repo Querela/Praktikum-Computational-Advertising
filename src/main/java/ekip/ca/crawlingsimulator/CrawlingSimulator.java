@@ -170,6 +170,7 @@ public class CrawlingSimulator {
     public WebGraph setupData() throws Exception {
         DBWebGraphBuilder wg = new DBWebGraphBuilder(show_progress, discard_database);
         wg.connectToDB(database_file, database_options);
+        wg.setCreateCrawlGraph(false);
 
         wg.loadQualities(quality_file);
         wg.loadGraph(graph_file);
