@@ -176,12 +176,11 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
         } // if
 
         for (WebPage wp : pages) {
-            String url = wp.getURL();
-
             Page page = null;
             // decide what the score represents
             if (isBacklinkCount) {
-                page = new PageWrapper(wp, wp.getInLinkCount());
+                // Initially only a single inlink
+                page = new PageWrapper(wp, 1);
             } else if (!isOPIC) {
                 page = new PageWrapper(wp, score);
             } else {
@@ -189,7 +188,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             } // if-else
 
             // get site url
-            String domainUrl = url.substring(0, url.lastIndexOf('/')); // wp.getDomain();
+            String domainUrl = wp.getDomain();
 
             // Search for site or create new site
             // and add page to site
@@ -202,7 +201,8 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
                         if (pageInner.getWebPage().getID() == wp.getID()) {
                             // Refresh backlink count for existing pages
                             if (isBacklinkCount) {
-                                pageInner.setScore(pageInner.getWebPage().getInLinkCount());
+                                // add one more inlink if page already existing
+                                pageInner.addScore(1);
                             } // if
 
                             alreadyThere = true;
