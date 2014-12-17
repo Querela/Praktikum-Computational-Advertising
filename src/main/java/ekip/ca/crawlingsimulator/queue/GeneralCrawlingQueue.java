@@ -103,6 +103,9 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     private PageLevelStrategy.Factory pageFact;
     private SiteLevelStrategy siteStrategy;
 
+    private boolean isOPIC;
+    private boolean isBacklinkCount;
+
     /**
      * Constructor.
      * 
@@ -119,6 +122,12 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
 
         this.siteStrategy = this.siteFact.get();
         this.siteStrategy.init(this.sites);
+
+        // Different logic for different scoring models according to the page
+        // level strategy.
+        PageLevelStrategy pls = this.pageFact.get();
+        this.isOPIC = pls instanceof OPICPageLevelStrategy;
+        this.isBacklinkCount = pls instanceof BackLinkCountPageLevelStrategy;
     }
 
     @Override
@@ -156,17 +165,14 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             return;
         } // if
 
-        // Different logic for different scoring models according to the page
-        // level strategy.
-        boolean isOPIC = pageFact instanceof OPICPageLevelStrategy;
-        boolean isBacklinkCount = pageFact instanceof BackLinkCountPageLevelStrategy;
-
         if (isOPIC) {
-            // distribute score to its child
-            float scoreToAssign = sourcePage.getScore() / pages.size();
-            for (WebPage page : pages) {
-                page.setScore(page.getScore() + scoreToAssign);
-            } // for
+            if (sourcePage != null) {
+                // distribute score to its child
+                float scoreToAssign = sourcePage.getScore() / pages.size();
+                for (WebPage page : pages) {
+                    page.setScore(page.getScore() + scoreToAssign);
+                } // for
+            } // if
         } // if
 
         for (WebPage wp : pages) {
