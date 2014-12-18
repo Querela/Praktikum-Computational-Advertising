@@ -4,6 +4,7 @@
 package ekip.ca.crawlingsimulator.queue;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -99,6 +100,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     }
 
     private LinkedList<Site> sites;
+    private HashMap<String, Site> urlSiteLookup;
     private SiteLevelStrategy.Factory siteFact;
     private PageLevelStrategy.Factory pageFact;
     private SiteLevelStrategy siteStrategy;
@@ -117,6 +119,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
      */
     public GeneralCrawlingQueue(SiteLevelStrategy.Factory siteFact, PageLevelStrategy.Factory pageFact) {
         this.sites = new LinkedList<>();
+        this.urlSiteLookup = new HashMap<>();
         this.siteFact = siteFact;
         this.pageFact = pageFact;
 
@@ -192,37 +195,33 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
 
             // Search for site or create new site
             // and add page to site
-            boolean found = false;
-            for (Site site : sites) {
-                if (site.getUrl().equals(domainUrl)) {
-                    // check if already in queue?
-                    boolean alreadyThere = false;
-                    for (Page pageInner : site.getPages()) {
-                        if (pageInner.getWebPage().getID() == wp.getID()) {
-                            // Refresh backlink count for existing pages
-                            if (isBacklinkCount) {
-                                // add one more inlink if page already existing
-                                pageInner.addScore(1);
-                            } // if
-
-                            alreadyThere = true;
-                            break;
+            if (urlSiteLookup.containsKey(domainUrl)) {
+                Site site = urlSiteLookup.get(domainUrl);
+                // check if already in queue?
+                boolean alreadyThere = false;
+                for (Page pageInner : site.getPages()) {
+                    if (pageInner.getWebPage().getID() == wp.getID()) {
+                        // Refresh backlink count for existing pages
+                        if (isBacklinkCount) {
+                            // add one more inlink if page already existing
+                            pageInner.addScore(1);
                         } // if
-                    } // for
 
-                    if (!alreadyThere) {
-                        site.getPages().offer(page);
+                        alreadyThere = true;
+                        break;
                     } // if
-                    found = true;
-                    break;
+                } // for
+
+                if (!alreadyThere) {
+                    site.getPages().offer(page);
                 } // if
-            } // for
-            if (!found) {
+            } else {
                 // add new site wrapper for queue with page
-                Site s = new SiteWrapper(domainUrl, pageFact.get());
-                sites.offer(s);
-                s.getPages().offer(page);
-            } // if
+                Site site = new SiteWrapper(domainUrl, pageFact.get());
+                sites.offer(site);
+                urlSiteLookup.put(domainUrl, site);
+                site.getPages().offer(page);
+            } // if-else
         } // for
     }
 
