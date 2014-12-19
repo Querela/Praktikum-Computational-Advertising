@@ -4,7 +4,7 @@
   <interface id="1" language="java" name="ekip.ca.crawlingsimulator.queue.Page" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/Page.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="153" width="144" x="730" y="2532"/>    
+    <position height="153" width="144" x="1187" y="2532"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -15,7 +15,7 @@
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/GeneralCrawlingQueue.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="189" width="170" x="478" y="2303"/>    
+    <position height="189" width="170" x="922" y="2303"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -25,7 +25,7 @@
   <interface id="3" language="java" name="ekip.ca.crawlingsimulator.queue.Site" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/Site.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="117" width="184" x="730" y="2092"/>    
+    <position height="117" width="184" x="1187" y="2092"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -36,7 +36,7 @@
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/GeneralCrawlingQueue.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="153" width="216" x="700" y="1359"/>    
+    <position height="153" width="216" x="1199" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -46,7 +46,7 @@
   <interface id="5" language="java" name="ekip.ca.crawlingsimulator.queue.CrawlingQueue" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/CrawlingQueue.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="153" width="243" x="1520" y="1359"/>    
+    <position height="153" width="243" x="2019" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -57,7 +57,7 @@
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/PageLevelStrategy.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="81" width="143" x="1091" y="2092"/>    
+    <position height="81" width="143" x="1590" y="2092"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -68,7 +68,7 @@
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/MaxPagePrioritySiteLevelStrategy.java" 
     binary="false" corner="BOTTOM_RIGHT">    
-    <position height="135" width="218" x="281" y="554"/>    
+    <position height="117" width="218" x="654" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -78,7 +78,7 @@
   <interface id="8" language="java" name="ekip.ca.crawlingsimulator.queue.PageLevelStrategy" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/PageLevelStrategy.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="117" width="154" x="1019" y="2303"/>    
+    <position height="117" width="154" x="1476" y="2303"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -89,64 +89,53 @@
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/SiteLevelStrategy.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="81" width="142" x="241" y="2092"/>    
+    <position height="81" width="142" x="975" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </interface>  
-  <interface id="10" language="java" name="ekip.ca.crawlingsimulator.queue.SiteLevelStrategy" 
-    project="CrawlingSimulator" 
-    file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/SiteLevelStrategy.java" binary="false" 
-    corner="BOTTOM_RIGHT">    
-    <position height="117" width="148" x="241" y="1359"/>    
-    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
-      visibility="true">      
-      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
-      <operations public="true" package="true" protected="true" private="true" static="true"/>    
-    </display>  
-  </interface>  
-  <class id="11" language="java" name="ekip.ca.crawlingsimulator.queue.RoundRobinSiteLevelStrategy" 
+  <class id="10" language="java" name="ekip.ca.crawlingsimulator.queue.RoundRobinSiteLevelStrategy" 
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/RoundRobinSiteLevelStrategy.java" 
     binary="false" corner="BOTTOM_RIGHT">    
-    <position height="153" width="192" x="539" y="554"/>    
+    <position height="135" width="192" x="935" y="554"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="12" language="java" name="ekip.ca.crawlingsimulator.queue.GeneralCrawlingQueue" project="CrawlingSimulator" 
+  <class id="11" language="java" name="ekip.ca.crawlingsimulator.queue.GeneralCrawlingQueue" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/GeneralCrawlingQueue.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="207" width="243" x="771" y="554"/>    
+    <position height="225" width="243" x="1199" y="554"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <interface id="13" language="java" name="ekip.ca.crawlingsimulator.WebPage" project="CrawlingSimulator" 
+  <interface id="12" language="java" name="ekip.ca.crawlingsimulator.WebPage" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/WebPage.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="279" width="213" x="1983" y="2725"/>    
+    <position height="279" width="213" x="922" y="2725"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </interface>  
-  <class id="14" language="java" name="ekip.ca.crawlingsimulator.Progress" project="CrawlingSimulator" 
+  <class id="13" language="java" name="ekip.ca.crawlingsimulator.Progress" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/Progress.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="693" width="159" x="1803" y="1359"/>    
+    <position height="693" width="159" x="455" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="15" language="java" name="ekip.ca.crawlingsimulator.CrawlingSimulator.FileConverter" 
+  <class id="14" language="java" name="ekip.ca.crawlingsimulator.CrawlingSimulator.FileConverter" 
     project="CrawlingSimulator" file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/CrawlingSimulator.java" 
     binary="false" corner="BOTTOM_RIGHT">    
     <position height="99" width="118" x="41" y="554"/>    
@@ -156,430 +145,382 @@
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <interface id="16" language="java" name="ekip.ca.crawlingsimulator.WebGraphBuilder" project="CrawlingSimulator" 
+  <interface id="15" language="java" name="ekip.ca.crawlingsimulator.WebGraphBuilder" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/WebGraphBuilder.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="135" width="134" x="2044" y="1359"/>    
+    <position height="135" width="134" x="239" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </interface>  
-  <class id="17" language="java" name="ekip.ca.crawlingsimulator.CrawlingSimulator" project="CrawlingSimulator" 
+  <class id="16" language="java" name="ekip.ca.crawlingsimulator.CrawlingSimulator" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/CrawlingSimulator.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="477" width="215" x="1480" y="37"/>    
+    <position height="477" width="215" x="1359" y="37"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="18" language="java" name="ekip.ca.crawlingsimulator.DBWebGraphBuilder" project="CrawlingSimulator" 
+  <class id="17" language="java" name="ekip.ca.crawlingsimulator.DBWebGraphBuilder" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/DBWebGraphBuilder.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="765" width="392" x="2023" y="554"/>    
+    <position height="765" width="392" x="199" y="554"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <interface id="19" language="java" name="ekip.ca.crawlingsimulator.WebGraph" project="CrawlingSimulator" 
+  <interface id="18" language="java" name="ekip.ca.crawlingsimulator.WebGraph" project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/WebGraph.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="171" width="392" x="2044" y="2092"/>    
+    <position height="171" width="392" x="415" y="2092"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </interface>  
-  <class id="20" language="java" name="ekip.ca.crawlingsimulator.queue.OPICPageLevelStrategy" 
+  <class id="19" language="java" name="ekip.ca.crawlingsimulator.queue.OPICPageLevelStrategy" 
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/OPICPageLevelStrategy.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="153" width="204" x="1255" y="1359"/>    
+    <position height="153" width="204" x="1754" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="21" language="java" name="ekip.ca.crawlingsimulator.queue.BackLinkCountPageLevelStrategy" 
+  <class id="20" language="java" name="ekip.ca.crawlingsimulator.queue.BackLinkCountPageLevelStrategy" 
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/BackLinkCountPageLevelStrategy.java" 
     binary="false" corner="BOTTOM_RIGHT">    
-    <position height="135" width="217" x="977" y="1359"/>    
+    <position height="135" width="217" x="1476" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <class id="22" language="java" name="ekip.ca.crawlingsimulator.queue.MaxPriorityPageLevelStrategy" 
+  <class id="21" language="java" name="ekip.ca.crawlingsimulator.queue.MaxPriorityPageLevelStrategy" 
     project="CrawlingSimulator" 
     file="/CrawlingSimulator/src/main/java/ekip/ca/crawlingsimulator/queue/MaxPriorityPageLevelStrategy.java" 
     binary="false" corner="BOTTOM_RIGHT">    
-    <position height="153" width="204" x="465" y="2092"/>    
+    <position height="153" width="204" x="922" y="2092"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <association id="23">    
-    <bendpoint x="699" y="2532"/>    
-    <end type="SOURCE" refId="2" navigable="false">      
-      <attribute id="24" name="wp"/>      
-      <multiplicity id="25" minimum="0" maximum="1"/>    
-    </end>    
-    <end type="TARGET" refId="13" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <dependency id="26">    
-    <bendpoint x="739" y="2303"/>    
-    <end type="SOURCE" refId="3"/>    
-    <end type="TARGET" refId="1"/>  
-  </dependency>  
-  <realization id="27">    
+  <dependency id="22">    
     <end type="SOURCE" refId="11"/>    
-    <end type="TARGET" refId="10"/>  
-  </realization>  
-  <nesting id="28">    
-    <end type="SOURCE" refId="12"/>    
-    <end type="TARGET" refId="4"/>  
-  </nesting>  
-  <dependency id="29">    
-    <end type="SOURCE" refId="12"/>    
-    <end type="TARGET" refId="20"/>  
+    <end type="TARGET" refId="19"/>  
   </dependency>  
-  <dependency id="30">    
-    <end type="SOURCE" refId="18"/>    
-    <end type="TARGET" refId="14"/>  
+  <dependency id="23">    
+    <bendpoint x="944" y="1359"/>    
+    <end type="SOURCE" refId="10"/>    
+    <end type="TARGET" refId="3"/>  
   </dependency>  
-  <dependency id="31">    
-    <end type="SOURCE" refId="1"/>    
-    <end type="TARGET" refId="13"/>  
-  </dependency>  
-  <dependency id="32">    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="12"/>  
-  </dependency>  
-  <dependency id="33">    
-    <bendpoint x="1650" y="554"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="14"/>  
-  </dependency>  
-  <realization id="34">    
-    <end type="SOURCE" refId="12"/>    
-    <end type="TARGET" refId="5"/>  
-  </realization>  
-  <association id="35">    
-    <bendpoint x="669" y="1359"/>    
-    <end type="SOURCE" refId="12" navigable="false">      
-      <attribute id="36" name="sites"/>      
-      <multiplicity id="37" minimum="0" maximum="2147483647"/>    
-    </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <dependency id="38">    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="18"/>  
-  </dependency>  
-  <dependency id="39">    
-    <bendpoint x="1489" y="554"/>    
-    <bendpoint x="1489" y="1359"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="6"/>  
-  </dependency>  
-  <nesting id="40">    
-    <bendpoint x="482" y="1359"/>    
-    <bendpoint x="434" y="2092"/>    
-    <end type="SOURCE" refId="12"/>    
-    <end type="TARGET" refId="2"/>  
-  </nesting>  
-  <nesting id="41">    
-    <end type="SOURCE" refId="8"/>    
-    <end type="TARGET" refId="6"/>  
-  </nesting>  
-  <dependency id="42">    
-    <bendpoint x="1510" y="554"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="5"/>  
-  </dependency>  
-  <dependency id="43">    
-    <bendpoint x="2466" y="554"/>    
-    <bendpoint x="2466" y="1359"/>    
-    <bendpoint x="2466" y="2092"/>    
-    <bendpoint x="2466" y="2303"/>    
-    <bendpoint x="2466" y="2532"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="13"/>  
-  </dependency>  
-  <association id="44">    
-    <bendpoint x="461" y="1359"/>    
-    <end type="SOURCE" refId="7" navigable="false">      
-      <attribute id="45" name="sites"/>      
-      <multiplicity id="46" minimum="0" maximum="2147483647"/>    
-    </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <realization id="47">    
-    <end type="SOURCE" refId="7"/>    
-    <end type="TARGET" refId="10"/>  
-  </realization>  
-  <realization id="48">    
-    <end type="SOURCE" refId="2"/>    
-    <end type="TARGET" refId="1"/>  
-  </realization>  
-  <realization id="49">    
-    <bendpoint x="1028" y="2092"/>    
-    <end type="SOURCE" refId="21"/>    
-    <end type="TARGET" refId="8"/>  
-  </realization>  
-  <dependency id="50">    
-    <end type="SOURCE" refId="6"/>    
-    <end type="TARGET" refId="8"/>  
-  </dependency>  
-  <association id="51">    
-    <bendpoint x="627" y="1359"/>    
-    <end type="SOURCE" refId="11" navigable="false">      
-      <attribute id="52" name="sites"/>      
-      <multiplicity id="53" minimum="0" maximum="2147483647"/>    
-    </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <dependency id="54">    
-    <bendpoint x="1238" y="554"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="21"/>  
-  </dependency>  
-  <dependency id="55">    
-    <bendpoint x="189" y="554"/>    
-    <bendpoint x="189" y="1359"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="9"/>  
-  </dependency>  
-  <dependency id="56">    
-    <bendpoint x="648" y="1359"/>    
-    <bendpoint x="699" y="2092"/>    
-    <bendpoint x="699" y="2303"/>    
-    <end type="SOURCE" refId="12"/>    
-    <end type="TARGET" refId="1"/>  
-  </dependency>  
-  <dependency id="57">    
-    <bendpoint x="250" y="554"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="10"/>  
-  </dependency>  
-  <association id="58">    
-    <bendpoint x="965" y="2092"/>    
+  <association id="24">    
+    <bendpoint x="1422" y="2092"/>    
     <end type="SOURCE" refId="4" navigable="false">      
-      <attribute id="59" name="pageStrategy"/>      
-      <multiplicity id="60" minimum="0" maximum="1"/>    
+      <attribute id="25" name="pageStrategy"/>      
+      <multiplicity id="26" minimum="0" maximum="1"/>    
     </end>    
     <end type="TARGET" refId="8" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="61">    
-    <bendpoint x="944" y="2092"/>    
-    <bendpoint x="944" y="2303"/>    
-    <end type="SOURCE" refId="4" navigable="false">      
-      <attribute id="62" name="pages"/>      
-      <multiplicity id="63" minimum="0" maximum="2147483647"/>    
-    </end>    
-    <end type="TARGET" refId="1" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <association id="64">    
-    <bendpoint x="419" y="1359"/>    
-    <end type="SOURCE" refId="12" navigable="false">      
-      <attribute id="65" name="siteFact"/>      
-      <multiplicity id="66" minimum="0" maximum="1"/>    
-    </end>    
-    <end type="TARGET" refId="9" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <dependency id="67">    
-    <bendpoint x="1376" y="554"/>    
+  <dependency id="27">    
+    <bendpoint x="902" y="1359"/>    
+    <bendpoint x="870" y="2092"/>    
+    <bendpoint x="870" y="2303"/>    
+    <bendpoint x="870" y="2532"/>    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="12"/>  
+  </dependency>  
+  <dependency id="28">    
     <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="20"/>  
-  </dependency>  
-  <realization id="68">    
-    <end type="SOURCE" refId="18"/>    
-    <end type="TARGET" refId="16"/>  
-  </realization>  
-  <nesting id="69">    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="15"/>  
-  </nesting>  
-  <dependency id="70">    
-    <end type="SOURCE" refId="8"/>    
-    <end type="TARGET" refId="1"/>  
-  </dependency>  
-  <association id="71">    
-    <bendpoint x="2013" y="1359"/>    
-    <bendpoint x="2013" y="2092"/>    
-    <bendpoint x="2013" y="2303"/>    
-    <bendpoint x="2013" y="2532"/>    
-    <end type="SOURCE" refId="18" navigable="false">      
-      <attribute id="72" name="seedPages"/>      
-      <multiplicity id="73" minimum="0" maximum="2147483647"/>    
-    </end>    
-    <end type="TARGET" refId="13" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <dependency id="74">    
-    <end type="SOURCE" refId="16"/>    
-    <end type="TARGET" refId="19"/>  
-  </dependency>  
-  <association id="75">    
-    <bendpoint x="1264" y="2092"/>    
-    <bendpoint x="1264" y="2303"/>    
-    <end type="SOURCE" refId="20" navigable="false">      
-      <attribute id="76" name="pages"/>      
-      <multiplicity id="77" minimum="0" maximum="2147483647"/>    
-    </end>    
-    <end type="TARGET" refId="1" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <dependency id="78">    
-    <bendpoint x="440" y="1359"/>    
-    <bendpoint x="413" y="2092"/>    
-    <bendpoint x="413" y="2303"/>    
-    <bendpoint x="413" y="2532"/>    
-    <end type="SOURCE" refId="12"/>    
     <end type="TARGET" refId="13"/>  
   </dependency>  
-  <realization id="79">    
-    <bendpoint x="1060" y="2092"/>    
-    <end type="SOURCE" refId="20"/>    
+  <realization id="29">    
+    <bendpoint x="403" y="1359"/>    
+    <end type="SOURCE" refId="17"/>    
+    <end type="TARGET" refId="18"/>  
+  </realization>  
+  <dependency id="30">    
+    <bendpoint x="2009" y="554"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="5"/>  
+  </dependency>  
+  <dependency id="31">    
+    <bendpoint x="2292" y="554"/>    
+    <bendpoint x="2292" y="1359"/>    
+    <bendpoint x="2271" y="2092"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <dependency id="32">    
+    <bendpoint x="678" y="2303"/>    
+    <bendpoint x="678" y="2532"/>    
+    <end type="SOURCE" refId="18"/>    
+    <end type="TARGET" refId="12"/>  
+  </dependency>  
+  <dependency id="33">    
+    <bendpoint x="883" y="554"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="13"/>  
+  </dependency>  
+  <realization id="34">    
+    <end type="SOURCE" refId="21"/>    
     <end type="TARGET" refId="8"/>  
   </realization>  
-  <dependency id="80">    
-    <end type="SOURCE" refId="12"/>    
-    <end type="TARGET" refId="21"/>  
-  </dependency>  
-  <dependency id="81">    
-    <bendpoint x="2445" y="554"/>    
-    <bendpoint x="2445" y="1359"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="19"/>  
-  </dependency>  
-  <association id="82">    
-    <bendpoint x="678" y="2303"/>    
-    <end type="SOURCE" refId="22" navigable="false">      
-      <attribute id="83" name="pages"/>      
-      <multiplicity id="84" minimum="0" maximum="2147483647"/>    
+  <association id="35">    
+    <bendpoint x="1763" y="2092"/>    
+    <bendpoint x="1763" y="2303"/>    
+    <end type="SOURCE" refId="19" navigable="false">      
+      <attribute id="36" name="pages"/>      
+      <multiplicity id="37" minimum="0" maximum="2147483647"/>    
     </end>    
     <end type="TARGET" refId="1" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="85">    
-    <end type="SOURCE" refId="12" navigable="false">      
-      <attribute id="86" name="siteStrategy"/>      
-      <multiplicity id="87" minimum="0" maximum="1"/>    
-    </end>    
-    <end type="TARGET" refId="10" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <realization id="88">    
-    <end type="SOURCE" refId="22"/>    
-    <end type="TARGET" refId="8"/>  
-  </realization>  
-  <dependency id="89">    
+  <dependency id="38">    
+    <bendpoint x="1196" y="2303"/>    
     <end type="SOURCE" refId="3"/>    
-    <end type="TARGET" refId="8"/>  
-  </dependency>  
-  <dependency id="90">    
-    <bendpoint x="210" y="1359"/>    
-    <bendpoint x="210" y="2092"/>    
-    <bendpoint x="210" y="2303"/>    
-    <end type="SOURCE" refId="7"/>    
     <end type="TARGET" refId="1"/>  
   </dependency>  
-  <dependency id="91">    
-    <end type="SOURCE" refId="9"/>    
-    <end type="TARGET" refId="10"/>  
-  </dependency>  
-  <dependency id="92">    
-    <bendpoint x="1992" y="554"/>    
-    <bendpoint x="1992" y="1359"/>    
-    <bendpoint x="1971" y="2092"/>    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="8"/>  
-  </dependency>  
-  <dependency id="93">    
-    <end type="SOURCE" refId="6"/>    
-    <end type="TARGET" refId="8"/>  
-  </dependency>  
-  <dependency id="94">    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="11"/>  
-  </dependency>  
-  <dependency id="95">    
-    <end type="SOURCE" refId="10"/>    
-    <end type="TARGET" refId="3"/>  
-  </dependency>  
-  <nesting id="96">    
-    <end type="SOURCE" refId="10"/>    
-    <end type="TARGET" refId="9"/>  
-  </nesting>  
-  <dependency id="97">    
-    <end type="SOURCE" refId="17"/>    
-    <end type="TARGET" refId="7"/>  
-  </dependency>  
-  <association id="98">    
-    <bendpoint x="1224" y="1359"/>    
-    <end type="SOURCE" refId="12" navigable="false">      
-      <attribute id="99" name="pageFact"/>      
-      <multiplicity id="100" minimum="0" maximum="1"/>    
+  <association id="39">    
+    <bendpoint x="1723" y="1359"/>    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="40" name="pageFact"/>      
+      <multiplicity id="41" minimum="0" maximum="1"/>    
     </end>    
     <end type="TARGET" refId="6" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <realization id="101">    
-    <bendpoint x="2208" y="1359"/>    
-    <end type="SOURCE" refId="18"/>    
-    <end type="TARGET" refId="19"/>  
+  <realization id="42">    
+    <bendpoint x="1485" y="2092"/>    
+    <end type="SOURCE" refId="20"/>    
+    <end type="TARGET" refId="8"/>  
   </realization>  
-  <dependency id="102">    
-    <bendpoint x="1992" y="2092"/>    
-    <bendpoint x="1992" y="2303"/>    
-    <bendpoint x="1992" y="2532"/>    
+  <dependency id="43">    
+    <end type="SOURCE" refId="15"/>    
+    <end type="TARGET" refId="18"/>  
+  </dependency>  
+  <association id="44">    
+    <bendpoint x="208" y="1359"/>    
+    <bendpoint x="208" y="2092"/>    
+    <bendpoint x="208" y="2303"/>    
+    <bendpoint x="208" y="2532"/>    
+    <end type="SOURCE" refId="17" navigable="false">      
+      <attribute id="45" name="seedPages"/>      
+      <multiplicity id="46" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="12" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="47">    
+    <bendpoint x="2292" y="2092"/>    
+    <bendpoint x="2292" y="2303"/>    
+    <bendpoint x="2292" y="2532"/>    
     <end type="SOURCE" refId="5"/>    
-    <end type="TARGET" refId="13"/>  
+    <end type="TARGET" refId="12"/>  
   </dependency>  
-  <dependency id="103">    
-    <bendpoint x="2034" y="2303"/>    
-    <bendpoint x="2034" y="2532"/>    
-    <end type="SOURCE" refId="19"/>    
-    <end type="TARGET" refId="13"/>  
+  <dependency id="48">    
+    <bendpoint x="621" y="554"/>    
+    <bendpoint x="424" y="1359"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="18"/>  
   </dependency>  
-  <realization id="104">    
-    <end type="SOURCE" refId="4"/>    
-    <end type="TARGET" refId="3"/>  
-  </realization>  
-  <dependency id="105">    
-    <bendpoint x="946" y="1359"/>    
-    <bendpoint x="1007" y="2092"/>    
-    <end type="SOURCE" refId="12"/>    
+  <nesting id="49">    
+    <bendpoint x="923" y="1359"/>    
+    <bendpoint x="891" y="2092"/>    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="2"/>  
+  </nesting>  
+  <dependency id="50">    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="11"/>  
+  </dependency>  
+  <dependency id="51">    
+    <bendpoint x="2313" y="554"/>    
+    <bendpoint x="2313" y="1359"/>    
+    <bendpoint x="2313" y="2092"/>    
+    <bendpoint x="2313" y="2303"/>    
+    <bendpoint x="2313" y="2532"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="12"/>  
+  </dependency>  
+  <dependency id="52">    
+    <bendpoint x="1147" y="1359"/>    
+    <bendpoint x="1156" y="2092"/>    
+    <bendpoint x="1156" y="2303"/>    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="1"/>  
+  </dependency>  
+  <dependency id="53">    
+    <bendpoint x="1472" y="554"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="20"/>  
+  </dependency>  
+  <dependency id="54">    
+    <end type="SOURCE" refId="8"/>    
+    <end type="TARGET" refId="1"/>  
+  </dependency>  
+  <dependency id="55">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="12"/>  
+  </dependency>  
+  <dependency id="56">    
+    <end type="SOURCE" refId="6"/>    
     <end type="TARGET" refId="8"/>  
   </dependency>  
-  <association id="106">    
-    <bendpoint x="986" y="2092"/>    
-    <bendpoint x="986" y="2303"/>    
+  <association id="57">    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="58" name="siteFact"/>      
+      <multiplicity id="59" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="9" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="60">    
+    <bendpoint x="1122" y="2303"/>    
     <end type="SOURCE" refId="21" navigable="false">      
-      <attribute id="107" name="pages"/>      
-      <multiplicity id="108" minimum="0" maximum="2147483647"/>    
+      <attribute id="61" name="pages"/>      
+      <multiplicity id="62" minimum="0" maximum="2147483647"/>    
     </end>    
     <end type="TARGET" refId="1" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
+  <association id="63">    
+    <bendpoint x="1443" y="2092"/>    
+    <bendpoint x="1443" y="2303"/>    
+    <end type="SOURCE" refId="20" navigable="false">      
+      <attribute id="64" name="pages"/>      
+      <multiplicity id="65" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="1" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="66">    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <dependency id="67">    
+    <bendpoint x="1168" y="554"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="9"/>  
+  </dependency>  
+  <dependency id="68">    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="20"/>  
+  </dependency>  
+  <realization id="69">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="1"/>  
+  </realization>  
+  <dependency id="70">    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="10"/>  
+  </dependency>  
+  <realization id="71">    
+    <end type="SOURCE" refId="17"/>    
+    <end type="TARGET" refId="15"/>  
+  </realization>  
+  <nesting id="72">    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="4"/>  
+  </nesting>  
+  <dependency id="73">    
+    <bendpoint x="1445" y="1359"/>    
+    <bendpoint x="1464" y="2092"/>    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <association id="74">    
+    <bendpoint x="931" y="2532"/>    
+    <end type="SOURCE" refId="2" navigable="false">      
+      <attribute id="75" name="wp"/>      
+      <multiplicity id="76" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="12" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <dependency id="77">    
+    <bendpoint x="1988" y="554"/>    
+    <bendpoint x="1988" y="1359"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="6"/>  
+  </dependency>  
+  <dependency id="78">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="8"/>  
+  </dependency>  
+  <nesting id="79">    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="14"/>  
+  </nesting>  
+  <realization id="80">    
+    <end type="SOURCE" refId="4"/>    
+    <end type="TARGET" refId="3"/>  
+  </realization>  
+  <association id="81">    
+    <bendpoint x="1401" y="2092"/>    
+    <bendpoint x="1401" y="2303"/>    
+    <end type="SOURCE" refId="4" navigable="false">      
+      <attribute id="82" name="pages"/>      
+      <multiplicity id="83" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="1" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <nesting id="84">    
+    <end type="SOURCE" refId="8"/>    
+    <end type="TARGET" refId="6"/>  
+  </nesting>  
+  <realization id="85">    
+    <bendpoint x="1559" y="2092"/>    
+    <end type="SOURCE" refId="19"/>    
+    <end type="TARGET" refId="8"/>  
+  </realization>  
+  <dependency id="86">    
+    <bendpoint x="1168" y="1359"/>    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="3"/>  
+  </dependency>  
+  <dependency id="87">    
+    <bendpoint x="849" y="2092"/>    
+    <bendpoint x="891" y="2303"/>    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="1"/>  
+  </dependency>  
+  <dependency id="88">    
+    <bendpoint x="1565" y="554"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="19"/>  
+  </dependency>  
+  <dependency id="89">    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="3"/>  
+  </dependency>  
+  <dependency id="90">    
+    <bendpoint x="904" y="554"/>    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="7"/>  
+  </dependency>  
+  <dependency id="91">    
+    <end type="SOURCE" refId="16"/>    
+    <end type="TARGET" refId="17"/>  
+  </dependency>  
+  <realization id="92">    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="5"/>  
+  </realization>  
   <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
     accessors="true" visibility="true">    
     <attributes public="true" package="true" protected="true" private="true" static="true"/>    

@@ -4,7 +4,6 @@
 package ekip.ca.crawlingsimulator.queue;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -99,8 +98,6 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
         }
     }
 
-    private LinkedList<Site> sites;
-    private HashMap<String, Site> urlSiteLookup;
     private SiteLevelStrategy.Factory siteFact;
     private PageLevelStrategy.Factory pageFact;
     private SiteLevelStrategy siteStrategy;
@@ -118,13 +115,11 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
      *            within their sites
      */
     public GeneralCrawlingQueue(SiteLevelStrategy.Factory siteFact, PageLevelStrategy.Factory pageFact) {
-        this.sites = new LinkedList<>();
-        this.urlSiteLookup = new HashMap<>();
         this.siteFact = siteFact;
         this.pageFact = pageFact;
 
         this.siteStrategy = this.siteFact.get();
-        this.siteStrategy.init(this.sites);
+        this.siteStrategy.init(new LinkedList<Site>());
 
         // Different logic for different scoring models according to the page
         // level strategy.
@@ -137,7 +132,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     public List<WebPage> getNextPages(int count) {
         List<WebPage> l = new ArrayList<>();
 
-        for (int i = 0; i < count && !sites.isEmpty(); i++) {
+        for (int i = 0; i < count && !siteStrategy.getSites().isEmpty(); i++) {
             WebPage page = getNextPage();
             if (page != null) {
                 l.add(page);
@@ -195,8 +190,8 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
 
             // Search for site or create new site
             // and add page to site
-            if (urlSiteLookup.containsKey(domainUrl)) {
-                Site site = urlSiteLookup.get(domainUrl);
+            Site site = siteStrategy.find(domainUrl);
+            if (site != null) {
                 // check if already in queue?
                 boolean alreadyThere = false;
                 for (Page pageInner : site.getPages()) {
@@ -217,9 +212,8 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
                 } // if
             } else {
                 // add new site wrapper for queue with page
-                Site site = new SiteWrapper(domainUrl, pageFact.get());
-                sites.offer(site);
-                urlSiteLookup.put(domainUrl, site);
+                site = new SiteWrapper(domainUrl, pageFact.get());
+                siteStrategy.add(site);
                 site.getPages().offer(page);
             } // if-else
         } // for
@@ -229,7 +223,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     public long getNumberOfElements() {
         long n = 0;
 
-        for (Site site : sites) {
+        for (Site site : siteStrategy.getSites()) {
             n += site.getPages().size();
         } // for
 
@@ -239,7 +233,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     @Override
     public void updateOrder() {
         // reorder pages in sites
-        for (Site site : sites) {
+        for (Site site : siteStrategy.getSites()) {
             site.getStrategy().reOrder();
         } // for
 

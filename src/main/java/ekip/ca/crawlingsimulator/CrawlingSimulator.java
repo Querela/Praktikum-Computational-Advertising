@@ -302,20 +302,21 @@ public class CrawlingSimulator {
                 } // if
             }
 
-            if (documents == 0 && pcq.getNumberOfElements() == 0) {
+            float qualityCrawl = (float) goodDocuments / (float) documents;
+            log.info("Calced Quality: {}", qualityCrawl);
+            log.debug("goodDocuments: {}", goodDocuments);
+            log.debug("documents: {}", documents);
+            if (i < qualitySteps.length) {
+                qualitySteps[i] = qualityCrawl;
+            } else {
+                log.warn("Array index error!");
+            }
+
+            if (pcq.getNumberOfElements() == 0) {
                 i = number_of_crawling_steps;
                 log.info("Queue ist empty! All remaining Steps will be aborted!");
-            } else {
-                float qualityCrawl = (float) goodDocuments / (float) documents;
-                log.info("Calced Quality: {}", qualityCrawl);
-                log.debug("goodDocuments: {}", goodDocuments);
-                log.debug("documents: {}", documents);
-                if (i < qualitySteps.length) {
-                    qualitySteps[i] = qualityCrawl;
-                } else {
-                    log.warn("Array index error!");
-                }
             }
+
             // calc time for each step
             lastStepDuration = System.currentTimeMillis() - timeStartLoop;
         }
