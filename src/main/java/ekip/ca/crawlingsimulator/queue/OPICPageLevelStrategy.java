@@ -5,7 +5,6 @@ package ekip.ca.crawlingsimulator.queue;
 
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedList;
 
 /**
  * A strategy that distributes cash from the source page to its child pages.
@@ -14,8 +13,7 @@ import java.util.LinkedList;
  * @author Erik Körner
  * @author Immanuel Plath
  */
-public class OPICPageLevelStrategy implements PageLevelStrategy {
-    private LinkedList<Page> pages;
+public class OPICPageLevelStrategy extends PageLevelStrategy {
     private static Comparator<Page> pageComparator = new Comparator<Page>() {
         @Override
         public int compare(Page page1, Page page2) {
@@ -26,32 +24,10 @@ public class OPICPageLevelStrategy implements PageLevelStrategy {
     /*
      * (non-Javadoc)
      * 
-     * @see
-     * ekip.ca.crawlingsimulator.queue.PageLevelStrategy#init(java.util.LinkedList
-     * )
-     */
-    @Override
-    public void init(LinkedList<Page> pages) {
-        this.pages = pages;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
      * @see ekip.ca.crawlingsimulator.queue.PageLevelStrategy#reOrder()
      */
     @Override
     public void reOrder() {
         Collections.sort(pages, pageComparator);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ekip.ca.crawlingsimulator.queue.PageLevelStrategy#getNext()
-     */
-    @Override
-    public Page getNext() {
-        return pages.poll();
     }
 }

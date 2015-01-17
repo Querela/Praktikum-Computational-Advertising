@@ -27,6 +27,7 @@ import ekip.ca.crawlingsimulator.queue.CrawlingQueue;
 import ekip.ca.crawlingsimulator.queue.GeneralCrawlingQueue;
 import ekip.ca.crawlingsimulator.queue.MaxPagePrioritySiteLevelStrategy;
 import ekip.ca.crawlingsimulator.queue.OPICPageLevelStrategy;
+import ekip.ca.crawlingsimulator.queue.OPTIMALPageLevelStrategy;
 import ekip.ca.crawlingsimulator.queue.PageLevelStrategy;
 import ekip.ca.crawlingsimulator.queue.RoundRobinSiteLevelStrategy;
 import ekip.ca.crawlingsimulator.queue.SiteLevelStrategy;
@@ -103,6 +104,9 @@ public class CrawlingSimulator {
 
     @Parameter(names = { "-t", "--crawling-strategy" }, description = "Crawling strategy")
     protected String crawling_strategy = "maxpagepriority-opic";
+
+    @Parameter(names = { "-tval", "--crawling-strategy-values" }, required = false, description = "Crawling strategy parameters")
+    protected String crawling_strategy_values = null;
 
     /**
      * Empty constructor.
@@ -223,6 +227,40 @@ public class CrawlingSimulator {
                 }
             };
             // } else if (crawling_strategy.contains("opic")) {
+        } else if (crawling_strategy.contains("optimal")) {
+            log.info("PageLevelStrategy: OPTIMAL");
+            log.debug("Parameters: {}", crawling_strategy_values);
+
+            log.warn("Switch to default because there are no parameters!");
+            crawling_strategy_values = (crawling_strategy_values == null) ? "1.0;1.0;1.0" : crawling_strategy_values;
+            String[] crawling_strategy_values_array = crawling_strategy_values.split(";");
+            if (crawling_strategy_values_array.length != 3) {
+                log.warn("Switch to default because there are less parameters than expected!");
+                crawling_strategy_values_array = new String[] { "1.0", "1.0", "1.0" };
+            } // if
+            float[] crawling_strategy_values_array_float = new float[3];
+            for (int i = 0; i < 3; i++) {
+                try {
+                    crawling_strategy_values_array_float[i] = Float.valueOf(crawling_strategy_values_array[i]);
+                } catch (Exception e) {
+                    log.error("Parsing parameters failed!", e);
+                } // try-catch
+            } // for
+
+            final float deltaForOPIC = crawling_strategy_values_array_float[0];
+            final float deltaForBacklinkCount = crawling_strategy_values_array_float[1];
+            final float deltaForQuality = crawling_strategy_values_array_float[2];
+
+            log.debug("Use delta = {} for OPIC.", deltaForOPIC);
+            log.debug("Use delta = {} for BackLinkCount.", deltaForBacklinkCount);
+            log.debug("Use delta = {} for Quality (good/total documents).", deltaForQuality);
+
+            pf = new PageLevelStrategy.Factory() {
+                @Override
+                public PageLevelStrategy get() {
+                    return new OPTIMALPageLevelStrategy(deltaForOPIC, deltaForBacklinkCount, deltaForQuality);
+                }
+            };
         } else {
             log.info("PageLevelStrategy: OPIC");
             pf = new PageLevelStrategy.Factory() {

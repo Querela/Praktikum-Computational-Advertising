@@ -104,6 +104,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
 
     private boolean isOPIC;
     private boolean isBacklinkCount;
+    private boolean isOPTIMAL;
 
     /**
      * Constructor.
@@ -126,6 +127,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
         PageLevelStrategy pls = this.pageFact.get();
         this.isOPIC = pls instanceof OPICPageLevelStrategy;
         this.isBacklinkCount = pls instanceof BackLinkCountPageLevelStrategy;
+        this.isOPTIMAL = pls instanceof OPTIMALPageLevelStrategy;
     }
 
     @Override
@@ -165,7 +167,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
 
         if (isOPIC) {
             if (sourcePage != null) {
-                // distribute score to its child
+                // distribute score to its children
                 float scoreToAssign = sourcePage.getScore() / pages.size();
                 for (WebPage page : pages) {
                     page.setScore(page.getScore() + scoreToAssign);
@@ -173,24 +175,48 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             } // if
         } // if
 
+        if (isOPTIMAL) {
+            // like code above in isOPIC
+            if (sourcePage != null) {
+                // distribute score to its children
+                float scoreToAssign = sourcePage.getScore() / pages.size();
+                for (WebPage page : pages) {
+                    String domainUrl = page.getDomain();
+                    Site site = siteStrategy.find(domainUrl);
+                    // get site for page / check if exists
+                    if (site == null) {
+                        // add new site wrapper for queue with page
+                        site = new SiteWrapper(domainUrl, pageFact.get());
+                        siteStrategy.add(site);
+                        ((OPTIMALPageLevelStrategy) site.getStrategy()).incOPICScore(page.getURL(), scoreToAssign);
+                    } // if
+                } // for
+            } // if
+        } // if
+
         for (WebPage wp : pages) {
+            // get site url
+            String domainUrl = wp.getDomain();
+            // Search for site or create new site
+            // and add page to site
+            Site site = siteStrategy.find(domainUrl);
+
             Page page = null;
             // decide what the score represents
             if (isBacklinkCount) {
                 // Initially only a single inlink
                 page = new PageWrapper(wp, 1);
+            } else if (isOPTIMAL) {
+                // Initially only a single inlink
+                ((OPTIMALPageLevelStrategy) site.getStrategy()).setBacklinkcountScore(wp.getURL(), 1);
+                page = new PageWrapper(wp);
             } else if (!isOPIC) {
                 page = new PageWrapper(wp, score);
             } else {
+                // isOPIC
                 page = new PageWrapper(wp);
             } // if-else
 
-            // get site url
-            String domainUrl = wp.getDomain();
-
-            // Search for site or create new site
-            // and add page to site
-            Site site = siteStrategy.find(domainUrl);
             if (site != null) {
                 // check if already in queue?
                 boolean alreadyThere = false;
@@ -200,7 +226,10 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
                         if (isBacklinkCount) {
                             // add one more inlink if page already existing
                             pageInner.addScore(1);
-                        } // if
+                        } else if (isOPTIMAL) {
+                            // add one more inlink if page already existing
+                            ((OPTIMALPageLevelStrategy) site.getStrategy()).incBacklinkcountScore(pageInner.getWebPage().getURL(), 1);
+                        } // else-if
 
                         alreadyThere = true;
                         break;
@@ -214,7 +243,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
                 // add new site wrapper for queue with page
                 site = new SiteWrapper(domainUrl, pageFact.get());
                 siteStrategy.add(site);
-                site.getPages().offer(page);
+                site.getStrategy().add(page);
             } // if-else
         } // for
     }

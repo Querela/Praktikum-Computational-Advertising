@@ -6,7 +6,6 @@ package ekip.ca.crawlingsimulator.queue;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 /**
  * A page level strategy that uses the in-links of pages to provide a score.
@@ -14,20 +13,7 @@ import java.util.LinkedList;
  * @author Erik Körner
  * @author Immanuel Plath
  */
-public class BackLinkCountPageLevelStrategy implements PageLevelStrategy {
-    private LinkedList<Page> pages;
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * ekip.ca.crawlingsimulator.queue.PageLevelStrategy#init(java.util.LinkedList
-     * )
-     */
-    @Override
-    public void init(LinkedList<Page> pages) {
-        this.pages = pages;
-    }
+public class BackLinkCountPageLevelStrategy extends PageLevelStrategy {
 
     /*
      * (non-Javadoc)
@@ -59,15 +45,4 @@ public class BackLinkCountPageLevelStrategy implements PageLevelStrategy {
 
         Collections.sort(pages, pageComparator);
     }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ekip.ca.crawlingsimulator.queue.PageLevelStrategy#getNext()
-     */
-    @Override
-    public Page getNext() {
-        return pages.poll();
-    }
-
 }
