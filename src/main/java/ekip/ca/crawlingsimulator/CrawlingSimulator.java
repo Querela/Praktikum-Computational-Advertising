@@ -231,8 +231,10 @@ public class CrawlingSimulator {
             log.info("PageLevelStrategy: OPTIMAL");
             log.debug("Parameters: {}", crawling_strategy_values);
 
-            log.warn("Switch to default because there are no parameters!");
-            crawling_strategy_values = (crawling_strategy_values == null) ? "1.0;1.0;1.0" : crawling_strategy_values;
+            if (crawling_strategy_values == null) {
+                log.warn("Switch to default because there are no parameters!");
+                crawling_strategy_values = "1.0;1.0;1.0";
+            } // if
             String[] crawling_strategy_values_array = crawling_strategy_values.split(";");
             if (crawling_strategy_values_array.length != 3) {
                 log.warn("Switch to default because there are less parameters than expected!");
@@ -241,7 +243,8 @@ public class CrawlingSimulator {
             float[] crawling_strategy_values_array_float = new float[3];
             for (int i = 0; i < 3; i++) {
                 try {
-                    crawling_strategy_values_array_float[i] = Float.valueOf(crawling_strategy_values_array[i]);
+                    crawling_strategy_values_array_float[i] = Float.valueOf(crawling_strategy_values_array[i].replace(
+                            ',', '.'));
                 } catch (Exception e) {
                     log.error("Parsing parameters failed!", e);
                 } // try-catch
