@@ -21,7 +21,6 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
      */
     public static class SiteWrapper implements Site {
         private String url;
-        private LinkedList<Page> pages;
         private PageLevelStrategy pageStrategy;
 
         /**
@@ -35,15 +34,14 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
          */
         public SiteWrapper(String url, PageLevelStrategy strategy) {
             this.url = url;
-            this.pages = new LinkedList<>();
             this.pageStrategy = strategy;
 
-            this.pageStrategy.init(this.pages);
+            this.pageStrategy.init(new LinkedList<Page>());
         }
 
         @Override
         public LinkedList<Page> getPages() {
-            return pages;
+            return pageStrategy.pages;
         }
 
         @Override
@@ -98,13 +96,13 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
         }
     }
 
-    private LinkedList<Site> sites;
     private SiteLevelStrategy.Factory siteFact;
     private PageLevelStrategy.Factory pageFact;
     private SiteLevelStrategy siteStrategy;
 
     private boolean isOPIC;
     private boolean isBacklinkCount;
+    private boolean isOPTIMAL;
 
     /**
      * Constructor.
@@ -116,25 +114,25 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
      *            within their sites
      */
     public GeneralCrawlingQueue(SiteLevelStrategy.Factory siteFact, PageLevelStrategy.Factory pageFact) {
-        this.sites = new LinkedList<>();
         this.siteFact = siteFact;
         this.pageFact = pageFact;
 
         this.siteStrategy = this.siteFact.get();
-        this.siteStrategy.init(this.sites);
+        this.siteStrategy.init(new LinkedList<Site>());
 
         // Different logic for different scoring models according to the page
         // level strategy.
         PageLevelStrategy pls = this.pageFact.get();
         this.isOPIC = pls instanceof OPICPageLevelStrategy;
         this.isBacklinkCount = pls instanceof BackLinkCountPageLevelStrategy;
+        this.isOPTIMAL = pls instanceof OPTIMALPageLevelStrategy;
     }
 
     @Override
     public List<WebPage> getNextPages(int count) {
         List<WebPage> l = new ArrayList<>();
 
-        for (int i = 0; i < count && !sites.isEmpty(); i++) {
+        for (int i = 0; i < count && !siteStrategy.getSites().isEmpty(); i++) {
             WebPage page = getNextPage();
             if (page != null) {
                 l.add(page);
@@ -167,7 +165,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
 
         if (isOPIC) {
             if (sourcePage != null) {
-                // distribute score to its child
+                // distribute score to its children
                 float scoreToAssign = sourcePage.getScore() / pages.size();
                 for (WebPage page : pages) {
                     page.setScore(page.getScore() + scoreToAssign);
@@ -175,54 +173,75 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
             } // if
         } // if
 
+        if (isOPTIMAL) {
+            // like code above in isOPIC
+            // distribute score to its children if we have parent else use
+            // default from function call (should be 10)
+            float scoreToAssign = (sourcePage != null) ? (sourcePage.getScore() / pages.size()) : score;
+            for (WebPage page : pages) {
+                String domainUrl = page.getDomain();
+                Site site = siteStrategy.find(domainUrl);
+                // get site for page / check if exists
+                if (site == null) {
+                    // add new site wrapper for queue with page
+                    site = new SiteWrapper(domainUrl, pageFact.get());
+                    siteStrategy.add(site);
+                    ((OPTIMALPageLevelStrategy) site.getStrategy()).incOPICScore(page.getURL(), scoreToAssign);
+                } // if
+            } // for
+        } // if
+
         for (WebPage wp : pages) {
+            // get site url
+            String domainUrl = wp.getDomain();
+            // Search for site or create new site
+            // and add page to site
+            Site site = siteStrategy.find(domainUrl);
+
             Page page = null;
             // decide what the score represents
             if (isBacklinkCount) {
                 // Initially only a single inlink
                 page = new PageWrapper(wp, 1);
-            } else if (!isOPIC) {
+            } else if (isOPTIMAL) {
+                // Initially only a single inlink
+                ((OPTIMALPageLevelStrategy) site.getStrategy()).setBacklinkcountScore(wp.getURL(), 1);
+                page = new PageWrapper(wp);
+            } else if (isOPIC) {
                 page = new PageWrapper(wp, score);
             } else {
                 page = new PageWrapper(wp);
             } // if-else
 
-            // get site url
-            String domainUrl = wp.getDomain();
+            if (site != null) {
+                // check if already in queue?
+                boolean alreadyThere = false;
+                for (Page pageInner : site.getPages()) {
+                    if (pageInner.getWebPage().getID() == wp.getID()) {
+                        // Refresh backlink count for existing pages
+                        if (isBacklinkCount) {
+                            // add one more inlink if page already existing
+                            pageInner.addScore(1);
+                        } else if (isOPTIMAL) {
+                            // add one more inlink if page already existing
+                            ((OPTIMALPageLevelStrategy) site.getStrategy()).incBacklinkcountScore(pageInner
+                                    .getWebPage().getURL(), 1);
+                        } // else-if
 
-            // Search for site or create new site
-            // and add page to site
-            boolean found = false;
-            for (Site site : sites) {
-                if (site.getUrl().equals(domainUrl)) {
-                    // check if already in queue?
-                    boolean alreadyThere = false;
-                    for (Page pageInner : site.getPages()) {
-                        if (pageInner.getWebPage().getID() == wp.getID()) {
-                            // Refresh backlink count for existing pages
-                            if (isBacklinkCount) {
-                                // add one more inlink if page already existing
-                                pageInner.addScore(1);
-                            } // if
-
-                            alreadyThere = true;
-                            break;
-                        } // if
-                    } // for
-
-                    if (!alreadyThere) {
-                        site.getPages().offer(page);
+                        alreadyThere = true;
+                        break;
                     } // if
-                    found = true;
-                    break;
+                } // for
+
+                if (!alreadyThere) {
+                    site.getStrategy().add(page);
                 } // if
-            } // for
-            if (!found) {
+            } else {
                 // add new site wrapper for queue with page
-                Site s = new SiteWrapper(domainUrl, pageFact.get());
-                sites.offer(s);
-                s.getPages().offer(page);
-            } // if
+                site = new SiteWrapper(domainUrl, pageFact.get());
+                siteStrategy.add(site);
+                site.getStrategy().add(page);
+            } // if-else
         } // for
     }
 
@@ -230,7 +249,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     public long getNumberOfElements() {
         long n = 0;
 
-        for (Site site : sites) {
+        for (Site site : siteStrategy.getSites()) {
             n += site.getPages().size();
         } // for
 
@@ -240,7 +259,7 @@ public class GeneralCrawlingQueue implements CrawlingQueue {
     @Override
     public void updateOrder() {
         // reorder pages in sites
-        for (Site site : sites) {
+        for (Site site : siteStrategy.getSites()) {
             site.getStrategy().reOrder();
         } // for
 

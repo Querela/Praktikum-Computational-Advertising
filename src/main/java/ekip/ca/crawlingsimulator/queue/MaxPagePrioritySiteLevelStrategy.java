@@ -6,26 +6,12 @@ package ekip.ca.crawlingsimulator.queue;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 /**
  * A site level strategy for ordering sites according to the accumulated score
  * of their pages.
  */
-public class MaxPagePrioritySiteLevelStrategy implements SiteLevelStrategy {
-    private LinkedList<Site> sites;
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * ekip.ca.crawlingsimulator.queue.SiteLevelStrategy#init(java.util.LinkedList
-     * )
-     */
-    @Override
-    public void init(LinkedList<Site> sites) {
-        this.sites = sites;
-    }
+public class MaxPagePrioritySiteLevelStrategy extends SiteLevelStrategy {
 
     /*
      * (non-Javadoc)
@@ -100,11 +86,10 @@ public class MaxPagePrioritySiteLevelStrategy implements SiteLevelStrategy {
             if (site.getPages().size() > 0) {
                 return site;
             } else {
-                sites.removeFirst();
+                remove(site);
             } // if-else
         } // for
 
         return null;
     }
-
 }
